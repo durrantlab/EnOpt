@@ -99,7 +99,7 @@ def handle_command_line(argument_parser):
 
     # output: set default if not specified
     if args.out_file is None:
-        args.out_file = "enopt_"
+        args.out_file = "enopt"
 
     print(vars(args))
     return args 

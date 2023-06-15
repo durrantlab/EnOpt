@@ -88,7 +88,7 @@ def interactive_summary(score_matrix,conf_weights,aucs,args):
     fig.update_yaxes(title_text='Frequency of lowest conformation score', row=3,col=1)
     
     # export as html (interactive)
-    fig.write_html(args.out_file+'_interactive_summary.html',include_plotlyjs=True)
+    fig.write_html(args.out_file+'_interactive_summary.html',include_plotlyjs='cdn')
     
     fig.show()
 
