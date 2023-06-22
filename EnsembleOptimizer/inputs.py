@@ -10,6 +10,11 @@ import pandas as pd
 
 ### COMMAND LINE ###
 def create_argparser():
+    """Make argparser and define all arguments.
+
+    Returns:
+        argparser: Command-line or json argument parser.
+    """
     # create argument parser
     optimizer_args = argparse.ArgumentParser(description = "Given an input \
         matrix of docking scores, containing rows of ligands (both known and \
@@ -66,6 +71,18 @@ def create_argparser():
 
 
 def handle_command_line(argument_parser):
+    """Check for errors/inconsistencies and set defaults for args.
+
+    Reads args and ensures that required inputs are in the correct 
+    format. Sets defaults for non-required inputs.
+    
+    Args:
+        argument_parser (argparser): Passed from create_argparser when
+                                     reading input.
+
+    Returns:
+        namespace: argument parser with defaults set. Dict formatted.
+    """
     # check args for inconsistencies or issues
     args = argument_parser.parse_args()
 
@@ -107,6 +124,22 @@ def handle_command_line(argument_parser):
 ### INPUT FILE ###
 
 def read_input(filename,known_ligs):
+    """Reads input csv and known ligands, constructs docking matrix 
+    and known ligand list.
+
+    If no knowns, produces boolean mask of all zeros. 
+
+    Args:
+        filename (str): path to file containing docking matrix.
+        known_ligs (str): path to file containing list of known
+                             ligands.
+
+    Returns:
+        tuple: of docking score matrix and known ligands, containing
+        pd.DataFrame: pd format of input scoring matrix.
+        np.array: mask of 0/1 indicating known ligands by index in 
+                  docking score dataframe.
+    """
     # reads input csv and known ligands, constructs docking matrix and known ligand list
     docking_score_matrix = pd.read_csv(filename)    
     knowns_list = []

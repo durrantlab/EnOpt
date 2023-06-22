@@ -1,4 +1,4 @@
-# file writing (log) and plot saving
+# file writing and plot saving
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,6 +8,17 @@ from plotly.subplots import make_subplots
 
 
 def write_matrix(matrix,prefix='output',weights_index=False):
+    """Correctly format and write DataFrame or array files as csv.
+    
+    Args:
+        matrix (pd.DataFrame or np.ndarray): matrix or vector object.
+        prefix (str): user-provided output file name. Default 'output'.
+        weights_index (bool): row index for dataframes. included for 
+                              conformation weights output.
+        
+    Returns:
+        None
+    """
     if type(matrix) == pd.DataFrame or type(matrix) == pd.Series:
         matrix.to_csv(prefix+'.csv',index=weights_index)
     elif type(matrix) == np.ndarray:
@@ -15,6 +26,20 @@ def write_matrix(matrix,prefix='output',weights_index=False):
 
 # output potential ligands ranked by predicted probability
 def output_ligands_ranked(score_data,score_matrix,weights,pred,args):
+    """Output potential ligands, ranked by predicted probability.
+    
+    Args:
+        score_data (tuple): Tuple of original docking score data, known ligands.
+        score_matrix (np.ndarray): scoring scheme and weighted score data.
+        weights (np.ndarray): conformation weights from tree models.
+        pred (np.ndarray): predicted probabilities from tree models.
+        args (Namespace): user-provided arguments.
+
+    Returns:
+        pd.DataFrame: final_scores, all data sorted by predicted probability.
+        pd.DataFrame: unknown_scores, outputs filtered to include only decoys/
+                      unknown compounds. Also sorted by predicted probability.
+    """
     final_scores = pd.concat([score_data[0],pd.Series(score_matrix,name=args.opt_method),pd.Series(pred,name='Predicted probability')],axis=1)
     unknown_scores = final_scores[np.invert(score_data[1].astype(bool))].sort_values(by='Predicted probability',ascending=False)
     final_scores = final_scores.sort_values(by='Predicted probability',ascending=False)
@@ -23,6 +48,16 @@ def output_ligands_ranked(score_data,score_matrix,weights,pred,args):
 
 # output conformation weights, ranked by feature importance in predictive model
 def output_best_confs(score_data,weights,args):
+    """Output top conformations from tree model feature importances.
+    
+    Args:
+        score_data (tuple): Tuple of original docking score data, known ligands.
+        weights (np.ndarray): conformation weights from tree models.
+        args (Namespace): user-provided arguments.
+
+    Returns:
+        pd.DataFrame: conformations with weights and top N indication included.
+    """
     top3 = np.argsort(weights)[-3:]
     confs_rank = np.zeros(len(weights)).astype(bool)
     confs_rank[top3] = True
@@ -35,10 +70,26 @@ def output_best_confs(score_data,weights,args):
 
 # make output of scoring include auc data
 def interactive_summary(score_matrix,conf_weights,aucs,args):
+    """Output interactive summary of ensemble optimization results.
+
+    Includes: top 20 compound probability values with hover info;
+              top 20 compound docking score distributions w hover info;
+              best-scoring conformations (with top 3 most predictive indicated);
+              (where applicable) AUC of tree models from 3-fold CV.
+    
+    Args:
+        score_matrix (pd.DataFrame): "final" (ranked, score/probability data included) matrix.
+        conf_weights (np.ndarray): conformation weights from tree models.
+        aucs (np.ndarray): ROCAUC values from 3-fold tree model cross validation.
+        args (Namespace): user-provided arguments.
+
+    Returns:
+        None: outputs html file of interactive summary. 
+    """
     fig = make_subplots(4,1,
                         subplot_titles=['Top 20 Compounds Predicted Active Probability',
                                         'Top 20 Compounds Docking Score Distribution',
-                                        'Lowest-score Frequency Per Conformation',
+                                        'Best-score Frequency Per Conformation',
                                         ' '])
     fig.update_layout(width=950,height=2000)
 
@@ -93,6 +144,26 @@ def interactive_summary(score_matrix,conf_weights,aucs,args):
     fig.show()
 
 def organize_output(score_data,score_matrix,weights,pred,aucs,args):
+    """Output interactive summary of ensemble optimization results.
+    
+    Wrapper for all output functions/organizing output.
+
+    Includes: top 20 compound probability values with hover info;
+              top 20 compound docking score distributions w hover info;
+              best-scoring conformations (with top 3 most predictive indicated);
+              (where applicable) AUC of tree models from 3-fold CV.
+    
+    Args:
+        score_data (tuple): Tuple of original docking score data, known ligands.
+        score_matrix (pd.DataFrame): "final" (ranked, score/probability data included) matrix.
+        weights (np.ndarray): conformation weights from tree models.
+        pred (np.ndarray): predicted probabilities from tree models.
+        aucs (np.ndarray): ROCAUC values from 3-fold tree model cross validation.
+        args (Namespace): user-provided arguments.
+
+    Returns:
+        None: writes all output files.
+    """
     # for either knowns or no knowns 
     # output final score matrix file, csv
     ranked_scores, ranked_unknowns = output_ligands_ranked(score_data,score_matrix,weights,pred,args)

@@ -10,6 +10,16 @@ from EnsembleOptimizer import testing
 # read input (commandline, generate input dataframe)
 # from input.py
 def load_data():
+    """Loads tool paramters and inputs command line or json.
+
+    Requires datafile only; all other parameters have defaults set.
+    Called internally using inputs.py. 
+
+    Returns:
+        tuple (pandas DataFrame, numpy array): 
+            contains docking score data in [0] and known ligand data in [1].
+        argparser Namespace object: contains json or command line arguments.
+    """
     argparser = inputs.create_argparser()
     args = inputs.handle_command_line(argparser)
     score_data = inputs.read_input(args.file,args.known_ligs)
@@ -19,6 +29,26 @@ def load_data():
 # from scoring.py
 # Options: (1) scores or ranks, (2) weighted or unweighted
 def generate_scores(dataframe,known_ligs,args):
+    """Generates ensemble scores from docking matrix data.
+        
+    Generates ensemble score matrix and tree model weights/
+    predictions based on user-specified optimization method (RF or XGB),
+    scoring scheme (eA/eB/rA/rB), score format (negative/positive better),
+    and inclusion of known ligands.
+    Called internally using scoring.py.    
+
+    Args:
+        dataframe (pandas DataRrame): Docking score matrix in df format.
+        known_ligs (numpy array): Mask of booleans (in int form)
+                                  identifying known ligands by df index.
+        args (arg Namespace): user-provided arguments.
+
+    Returns:
+        tuple (pandas DataFrame): includes weighted scores,
+                                    conformation weights, 
+                                    predicted probabilities,
+                                    aucs.
+    """
     scoring_dict = {'RF': scoring.get_weights_RF, 'XGB': scoring.get_weights_XGB}
     if args.weighted_score == True:
         score_matrix, weights, pred, aucs = scoring_dict[args.opt_method](dataframe,known_ligs,args.scoring_scheme)
@@ -29,24 +59,23 @@ def generate_scores(dataframe,known_ligs,args):
         aucs = None
     return (score_matrix, weights, pred, aucs)
 
-def single_confs(score_data,args):
-    # single conformations
-    pred_list = []
-    knowns_empty = []
-    for i in score_data[0].columns[1:-1]:
-        sc_score_data = score_data[0][['Ligand',i]]
-        score_matrix, weights, pred, aucs = generate_scores(sc_score_data,knowns_empty,args)
-        pred_list.append(testing.rocauc(score_data[1],pred))
-    return pred_list
-
 
 def main(test=''):
+    """Runs Ensemble Optimizer. Calls all other methods internally based on options.
+
+    Args:
+        test (str): one of '' (empty) or 'sc'. By default runs usage mode. 
+                    'sc' runs single-conformation testing mode.
+
+    Returns:
+        None
+    """
     if test == 'sc':
         # Get the command-line parameters and load the ligand-score data.
         score_data, args = load_data() 
 
         # single conformation tests
-        single_conf_list = single_confs(score_data,args)
+        single_conf_list = testing.single_confs(score_data,args)
 
         # score based on user input -- all conformations 
         score_matrix, weights, pred = generate_scores(score_data[0],[],args)
