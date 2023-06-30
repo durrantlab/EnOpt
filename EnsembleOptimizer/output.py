@@ -4,10 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as pg
+import plotly.colors as pc
 from plotly.subplots import make_subplots
 
 
-def write_matrix(matrix,prefix='output',weights_index=False):
+def write_matrix(matrix,prefix='enopt',weights_index=False):
     """Correctly format and write DataFrame or array files as csv.
     
     Args:
@@ -58,10 +59,10 @@ def output_best_confs(score_data,weights,args):
     Returns:
         pd.DataFrame: conformations with weights and top N indication included.
     """
-    top3 = np.argsort(weights)[-3:]
+    topn = np.argsort(weights)[-(int(args.topn_confs)):]
     confs_rank = np.zeros(len(weights)).astype(bool)
-    confs_rank[top3] = True
-    confs_rank = pd.Series(confs_rank,index=weights.index,name='Best subensemble (3)')
+    confs_rank[topn] = True
+    confs_rank = pd.Series(confs_rank,index=weights.index,name='Best subensemble (%s)'%args.topn_confs)
    
     weights.name = 'Conformation weight from '+args.opt_method
     confs_weights_out = pd.concat([weights,confs_rank],axis=1)
@@ -97,23 +98,33 @@ def interactive_summary(score_matrix,conf_weights,aucs,args):
     topn = score_matrix[:20]
     bar_hover = []
     box_hover = []
+    color_index = 0
     for lig in topn.itertuples():
         prob = lig[-1]
         ea = lig[-2]
         eb = np.max(lig[2:-3])
-        bar_hover.append("Predicted probability: %s\n Ensemble average: %s\n Ensemble best: %s"%(prob, ea, eb))
-        
-        fig.add_trace(pg.Box(x0=lig[1],y=lig[2:-3],hoverinfo='y',hovertext=box_hover),row=2,col=1)
+        bar_hover.append("Predicted probability: %s<br> Ensemble average: %s<br> Ensemble best: %s"%(round(prob,4), round(ea,3), round(eb,3)))
 
-    fig.add_trace(pg.Bar(x=topn['Ligand'],y=topn['Predicted probability'],hoverinfo='text',hovertext=bar_hover),row=1,col=1)
+        ligs_color = pc.qualitative.Light24[color_index]
+        fig.add_trace(pg.Bar(x=[lig[1]],name=lig[1],y=[prob],hoverinfo='text',hovertext=bar_hover,marker_color=ligs_color),row=1,col=1)
+        fig.add_trace(pg.Box(name=lig[1],y=lig[1:-3],hoverinfo='y',marker_color=ligs_color),row=2,col=1)
+        color_index +=1 
+        
+        #fig.add_trace(pg.Box(x0=lig[1],y=lig[2:-3],hoverinfo='y',hovertext=box_hover),row=2,col=1)
+
+    #fig.add_trace(pg.Bar(x=topn['Ligand'],y=topn['Predicted probability'],hoverinfo='text',hovertext=bar_hover),row=1,col=1)
 
     # top 3 conformations info
-    top_conf_counts = score_matrix[score_matrix.columns[2:-3]].idxmin(axis=1).value_counts()
+    if args.invert_score_sign is True:
+        top_conf_counts = score_matrix[score_matrix.columns[2:-3]].idxmax(axis=1).value_counts()
+    else:
+        top_conf_counts = score_matrix[score_matrix.columns[2:-3]].idxmin(axis=1).value_counts()
+    
     confs_dict = {'colors':{'True': 'limegreen', 'False': 'orangered'},
-                  'text':{'True': 'Top 3 predicitive conformations (from tree model)', 'False': None}}
+                  'text':{'True': 'Top %s predicitive conformations (from tree model)'%(args.topn_confs), 'False': None}}
     confs_hover = []
     confs_color = []
-    for i in conf_weights['Best subensemble (3)']:
+    for i in conf_weights['Best subensemble (%s)'%(args.topn_confs)]:
         confs_hover.append(confs_dict['text'][str(i)])
         confs_color.append(confs_dict['colors'][str(i)])
 
@@ -121,7 +132,7 @@ def interactive_summary(score_matrix,conf_weights,aucs,args):
 
     if aucs is not None:
         # ROCAUC of fitted tree model (if applicable)
-        fig.add_trace(pg.Bar(x=['Model 1','Model 2','Model 3'],y=aucs,hoverinfo='y'),row=4,col=1)
+        fig.add_trace(pg.Bar(x=['Model 1','Model 2','Model 3'],y=np.round(aucs,3),hoverinfo='y'),row=4,col=1)
 
         fig.update_xaxes(title_text='Tree model (from 3-fold CV)', row=4,col=1)
         fig.update_yaxes(title_text='AUC from included known ligands', row=4,col=1)

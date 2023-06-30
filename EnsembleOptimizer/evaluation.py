@@ -48,7 +48,7 @@ def topn(score_matrix,kn_ligs,metric):
     return top_n_enriched/topn_cutoff
 
 
-def unknown_ligs_method(unw_frame,scoring_scheme,top_method='top_n'):
+def unknown_ligs_method(unw_frame,args,top_method='top_n'):
     """Function to generate 'active' ligand heuristics with no known ligands.
 
     Identifies a heuristic-based set of 'actives' for tree model fitting
@@ -70,9 +70,8 @@ def unknown_ligs_method(unw_frame,scoring_scheme,top_method='top_n'):
     if top_method == 'top_n':
         # for n_known is the number of highest scorers
         n_known = int(0.02*len(unw_frame))
-        top_n = unw_frame[scoring_scheme].sort_values()[n_known]
-        top_ligs = unw_frame[scoring_scheme] < top_n
-        print(top_ligs.dtype) 
+        top_n = unw_frame[args.scoring_scheme].sort_values(ascending=(not args.invert_score_sign))[n_known]
+        top_ligs = unw_frame[args.scoring_scheme] < top_n
     elif top_method == 'sample':    
         # for n_known selection of 2% from top 10%
         known_range = range(int(len(unw_frame)*0.1))
@@ -89,8 +88,8 @@ def unknown_ligs_method(unw_frame,scoring_scheme,top_method='top_n'):
                         'TRYB1':148,
                         'XIAP':100}
         n_known = n_known_dict[top_method]
-        top_n = unw_frame[scoring_scheme].sort_values()[n_known]
-        top_ligs = unw_frame[scoring_scheme] < top_n
+        top_n = unw_frame[args.scoring_scheme].sort_values(ascending=(not args.invert_score_sign))[n_known]
+        top_ligs = unw_frame[args.scoring_scheme] < top_n
     
     return top_ligs.astype(int)
 
@@ -117,5 +116,5 @@ def single_confs(score_data,args):
     for i in score_data[0].columns[1:-1]:
         sc_score_data = score_data[0][['Ligand',i]]
         score_matrix, weights, pred, aucs = generate_scores(sc_score_data,knowns_empty,args)
-        pred_list.append(testing.rocauc(score_data[1],pred))
+        pred_list.append(rocauc(score_data[1],pred))
     return pred_list

@@ -5,7 +5,7 @@ import pandas as pd
 from EnsembleOptimizer import inputs
 from EnsembleOptimizer import scoring 
 from EnsembleOptimizer import output
-from EnsembleOptimizer import testing
+from EnsembleOptimizer import evaluation
 
 # read input (commandline, generate input dataframe)
 # from input.py
@@ -51,9 +51,9 @@ def generate_scores(dataframe,known_ligs,args):
     """
     scoring_dict = {'RF': scoring.get_weights_RF, 'XGB': scoring.get_weights_XGB}
     if args.weighted_score == True:
-        score_matrix, weights, pred, aucs = scoring_dict[args.opt_method](dataframe,known_ligs,args.scoring_scheme)
+        score_matrix, weights, pred, aucs = scoring_dict[args.opt_method](dataframe,known_ligs,args)
     elif args.weighted_score == False:
-        score_matrix = scoring.get_unweighted(dataframe,args.scoring_scheme)
+        score_matrix = scoring.get_unweighted(dataframe,args)
         weights = None
         pred = None
         aucs = None
@@ -75,12 +75,12 @@ def main(test=''):
         score_data, args = load_data() 
 
         # single conformation tests
-        single_conf_list = testing.single_confs(score_data,args)
+        single_conf_list = evaluation.single_confs(score_data,args)
 
         # score based on user input -- all conformations 
         score_matrix, weights, pred = generate_scores(score_data[0],[],args)
         # add all confs data to end
-        single_conf_list.append(testing.rocauc(score_data[1],pred))
+        single_conf_list.append(evaluation.rocauc(score_data[1],pred))
        
         # output
         np.save(args.out_file+'_aucdat.npy',np.array(single_conf_list,dtype=object))
