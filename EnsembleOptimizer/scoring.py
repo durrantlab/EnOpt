@@ -22,7 +22,7 @@ def ensemble_average(dataframe):
     dataframe.insert(dataframe.columns.size,'eA',dataframe.iloc[:,1:].mean(axis=1))
     return dataframe
 
-def ensemble_best(dataframe):
+def ensemble_best(dataframe,args):
     """Computes the best (default: lowest, can be changed by user option) 
     score across all conformations in ensemble.
     Called internally during scoring.
@@ -53,8 +53,8 @@ def rank_average(dataframe,args):
         pandas DataFrame: docking score matrix with ranked average column added.
     """
     df_ranked = dataframe.rank(axis=0,ascending=(not args.invert_score_sign))
-    df_ranked.insert(dataframe.columns.size,'rA',df_ranked.iloc[:,1:].mean(axis=1))
-    return df_ranked
+    dataframe.insert(dataframe.columns.size,'rA',df_ranked.iloc[:,1:].mean(axis=1))
+    return dataframe
 
 def rank_best(dataframe,args):
     """Computes the best (default: lowest, can be changed by user option) 
@@ -71,8 +71,8 @@ def rank_best(dataframe,args):
         pandas DataFrame: docking score matrix with ranked best column added.
     """
     df_ranked = dataframe.rank(axis=0,ascending=(not args.invert_score_sign))
-    df_ranked.insert(dataframe.columns.size,'rB',df_ranked.iloc[:,1:].min(axis=1))
-    return df_ranked
+    dataframe.insert(dataframe.columns.size,'rB',df_ranked.iloc[:,1:].min(axis=1))
+    return dataframe
 
 def get_unweighted(dataframe,args):
     """Wrapper for the scoring scheme functions above.
@@ -88,7 +88,7 @@ def get_unweighted(dataframe,args):
     if args.scoring_scheme == 'eA':
         return ensemble_average(dataframe)
     elif args.scoring_scheme == 'eB':
-        return ensemble_best(dataframe)
+        return ensemble_best(dataframe,args)
     elif args.scoring_scheme == 'rA':
         return rank_average(dataframe,args)
     elif args.scoring_scheme == 'rB':

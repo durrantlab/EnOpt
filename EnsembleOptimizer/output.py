@@ -25,6 +25,25 @@ def write_matrix(matrix,prefix='enopt',weights_index=False):
     elif type(matrix) == np.ndarray:
         np.savetxt(prefix+'.csv',matrix,delimiter=',')
 
+# ranked scores based ONLY on scoring scheme
+def output_scores_ranked(score_matrix,args):
+    """Output potential ligands, ranked by scoring scheme only.
+    
+    Args:
+        score_matrix (np.ndarray): scoring scheme and weighted score data.
+        args (Namespace): user-provided arguments.
+
+    Returns:
+        pd.DataFrame: final_scores, all data sorted by scoring scheme, ranked.
+    """
+    if args.invert_score_sign is True:
+        final_scores = score_matrix.sort_values(by=args.scoring_scheme,ascending=False)
+    elif args.invert_score_sign is False:
+        final_scores = score_matrix.sort_values(by=args.scoring_scheme,ascending=True)
+        
+    write_matrix(final_scores,prefix=args.out_file)
+    return final_scores
+
 # output potential ligands ranked by predicted probability
 def output_ligands_ranked(score_data,score_matrix,weights,pred,args):
     """Output potential ligands, ranked by predicted probability.

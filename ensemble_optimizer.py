@@ -98,7 +98,7 @@ def main(test=''):
         if args.weighted_score:
             output.organize_output(score_data,score_matrix,weights,pred,aucs,args)
         else:
-            output.write_matrix(score_matrix,prefix=args.out_file)
+            output.output_scores_ranked(score_matrix,args)
 
     return 0
 
