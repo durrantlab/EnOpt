@@ -119,10 +119,11 @@ def interactive_summary(score_matrix,conf_weights,aucs,args):
     box_hover = []
     color_index = 0
     for lig in topn.itertuples():
+        print(lig[-1])
         prob = lig[-1]
         ea = lig[-2]
         eb = np.max(lig[2:-3])
-        bar_hover.append("Predicted probability: %s<br> Ensemble average: %s<br> Ensemble best: %s"%(round(prob,4), round(ea,3), round(eb,3)))
+        bar_hover = ["Predicted probability: %s<br> Ensemble average: %s<br> Ensemble best: %s"%(round(prob,4), round(ea,3), round(eb,3))]
 
         ligs_color = pc.qualitative.Light24[color_index]
         fig.add_trace(pg.Bar(x=[lig[1]],name=lig[1],y=[prob],hoverinfo='text',hovertext=bar_hover,marker_color=ligs_color),row=1,col=1)
