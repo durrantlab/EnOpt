@@ -119,7 +119,6 @@ def interactive_summary(score_matrix,conf_weights,aucs,args):
     box_hover = []
     color_index = 0
     for lig in topn.itertuples():
-        print(lig[-1])
         prob = lig[-1]
         ea = lig[-2]
         eb = np.max(lig[2:-3])
