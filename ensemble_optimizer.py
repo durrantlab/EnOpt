@@ -60,45 +60,23 @@ def generate_scores(dataframe,known_ligs,args):
     return (score_matrix, weights, pred, aucs)
 
 
-def main(test=''):
+def main():
     """Runs Ensemble Optimizer. Calls all other methods internally based on options.
-
-    Args:
-        test (str): one of '' (empty) or 'sc'. By default runs usage mode. 
-                    'sc' runs single-conformation testing mode.
 
     Returns:
         None
     """
-    if test == 'sc':
-        # Get the command-line parameters and load the ligand-score data.
-        score_data, args = load_data() 
-
-        # single conformation tests
-        single_conf_list = evaluation.single_confs(score_data,args)
-
-        # score based on user input -- all conformations 
-        score_matrix, weights, pred = generate_scores(score_data[0],[],args)
-        # add all confs data to end
-        single_conf_list.append(evaluation.rocauc(score_data[1],pred))
-       
-        # output
-        np.save(args.out_file+'_aucdat.npy',np.array(single_conf_list,dtype=object))
+    # Get the command-line parameters and load the ligand-score data.
+    score_data, args = load_data() 
     
-    
-    #no test main
+    # score based on user input -- all conformations 
+    score_matrix, weights, pred, aucs = generate_scores(score_data[0],score_data[1],args)
+
+    # output
+    if args.weighted_score:
+        output.organize_output(score_data,score_matrix,weights,pred,aucs,args)
     else:
-        # Get the command-line parameters and load the ligand-score data.
-        score_data, args = load_data() 
-        
-        # score based on user input -- all conformations 
-        score_matrix, weights, pred, aucs = generate_scores(score_data[0],score_data[1],args)
-
-        # output
-        if args.weighted_score:
-            output.organize_output(score_data,score_matrix,weights,pred,aucs,args)
-        else:
-            output.output_scores_ranked(score_matrix,args)
+        output.output_scores_ranked(score_matrix,args)
 
     return 0
 

@@ -105,6 +105,12 @@ def handle_command_line(argument_parser):
         sys.exit(0) 
 
     # check known ligands param
+    if args.known_ligs == None:
+        print("It is highly recommended to include known ligands in your\
+                dataset. If you do not include known ligands, EnOpt will\
+                not be able to train a tree classifier to identify potential\
+                novel actives.")
+        args.weighted_score = False
     if args.known_ligs != None and not ".csv" in args.known_ligs:
         print("Known ligands file must be in .csv format.")
         sys.exit(0)
@@ -112,7 +118,7 @@ def handle_command_line(argument_parser):
     # scoring: scoring scheme is properly specified, or set default
     if args.scoring_scheme is None:
     	args.scoring_scheme = 'eA'
-    elif args.scoring_scheme not in ['eA','eB','rA','rB']:
+    if args.scoring_scheme != None and args.scoring_scheme not in ['eA','eB','rA','rB']:
         print("Scoring scheme must be one of 'eA' (Ensemble Average), \
             'eB' (Ensemble Best), 'rA' (Ranked Average), or 'rB' (Ranked Best).")
         sys.exit(0)
@@ -127,7 +133,7 @@ def handle_command_line(argument_parser):
         print("Optimization method must be one of 'RF' or 'XGB'.")
         sys.exit(0)
     else:
-        if args.weighted_score is False:
+        if args.known_ligs != None and args.weighted_score is False:
             args.weighted_score = True
 
     if args.topn_confs is None:

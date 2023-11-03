@@ -5,7 +5,6 @@ import sklearn.model_selection as msl
 import xgboost as xgb
 
 from .evaluation import rocauc
-from .evaluation import unknown_ligs_method
 
 # scoring functions (regular average vs. weighted average) of whole dataframe
 
@@ -122,19 +121,10 @@ def get_weights_RF(dataframe,known_ligs,args):
     unw_ens = get_unweighted(dataframe,args)
     rfc = ens.RandomForestClassifier()
 
-    # get weights for NO KNOWN ligands
-    if np.sum(known_ligs) == 0:
-        top_ligs = unknown_ligs_method(unw_ens,args)
-        rfc.fit(unw_ens.to_numpy()[:,1:-1],top_ligs)
-
-        aucs = None
-    
-    # get weights for KNOWN ligands
-    else:
-        # cv
-        cv_results = cv(rfc,unw_ens.to_numpy()[:,1:-1],known_ligs) 
-        rfc = cv_results[0]
-        aucs = cv_results[1]
+    # cv
+    cv_results = cv(rfc,unw_ens.to_numpy()[:,1:-1],known_ligs) 
+    rfc = cv_results[0]
+    aucs = cv_results[1]
 
     wts = rfc.feature_importances_
     pred = rfc.predict_proba(unw_ens.to_numpy()[:,1:-1])
@@ -165,20 +155,11 @@ def get_weights_XGB(dataframe,known_ligs,args):
     
     xgbc = xgb.XGBClassifier(n_estimators=15,verbosity=0,use_label_encoder=False)
     unw_ens = get_unweighted(dataframe,args)
-
-    # get weights for NO KNOWN ligands
-    if np.sum(known_ligs) == 0:
-        top_ligs = unknown_ligs_method(unw_ens,args)
-        xgbc_p = xgbc.fit(unw_ens.to_numpy()[:,1:-1],top_ligs)
-
-        aucs = None
-
-    # get weights for KNOWN ligands -- 3fCV
-    else:
-        # cv
-        cv_results = cv(xgbc,unw_ens.to_numpy()[:,1:-1],known_ligs)
-        xgbc_p = cv_results[0]
-        aucs = cv_results[1]
+    
+    # cv
+    cv_results = cv(xgbc,unw_ens.to_numpy()[:,1:-1],known_ligs)
+    xgbc_p = cv_results[0]
+    aucs = cv_results[1]
 
     wts = xgbc_p.feature_importances_
     pred = xgbc_p.predict_proba(unw_ens.to_numpy()[:,1:-1])
@@ -204,6 +185,7 @@ def cv(classifier_instance,dataframe,known_ligs):
             list: ROCAUCs for three tree models built. 
             )
     """
+    print(known_ligs)
     models = []
     aucs = []
     s = msl.StratifiedShuffleSplit(n_splits=3,test_size=0.35)
