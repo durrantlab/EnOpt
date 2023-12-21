@@ -121,11 +121,22 @@ def get_weights_RF(dataframe,known_ligs,args):
     unw_ens = get_unweighted(dataframe,args)
     rfc = ens.RandomForestClassifier()
     
+    if args.tree_params != None:
+        params = args.tree_params
+    else: # default parameters
+        params = {'n_estimators': 15,
+                    'max_depth': 6,
+                    } 
+
     if args.hyperparam:
         # params cv
         cv_results = hyperparams_tuning(rfc,unw_ens.to_numpy()[:,1:-1],known_ligs)
-        rfc = cv_results[2]
+        rfc = cv_results[0]
+        params = cv_results[1]
+        print(params)
 
+    rfc = rfc.set_params(**params)
+    
     # cv
     cv_results = cv(rfc,unw_ens.to_numpy()[:,1:-1],known_ligs) 
     rfc_final = cv_results[0]
@@ -165,9 +176,9 @@ def get_weights_XGB(dataframe,known_ligs,args):
         params = args.tree_params
     else: # default parameters
         params = {'n_estimators': 15,
-                    'max_depth': 2,
-                    'learning_rate': 0.1,
-                    'colsample_bytree': 0.5,
+                    'max_depth': 6,
+                    'learning_rate': 0.3,
+                    'colsample_bytree': 1,
                     } 
 
     if args.hyperparam:
@@ -175,9 +186,12 @@ def get_weights_XGB(dataframe,known_ligs,args):
         cv_results = hyperparams_tuning(xgbc,unw_ens.to_numpy()[:,1:-1],known_ligs)
         xgbc = cv_results[0]
         params = cv_results[1]
-    
-    xgbc = xgbc.set_params(**params)
+       
+        print(params)
+        #print params and hyperparam cv results
 
+    xgbc = xgbc.set_params(**params)
+    
     # cv
     cv_results = cv(xgbc,unw_ens.to_numpy()[:,1:-1],known_ligs)
     xgbc_final = cv_results[0]
@@ -240,10 +254,10 @@ def hyperparams_tuning(classifier_instance,dataframe,known_ligs):
     Returns:
         params dictionary
     """
-    params_dict = {'n_estimators': [15,50,100],
+    params_dict = {'n_estimators': [15,50,100,200],
                     'max_depth': [2,5,10],
-                    'learning_rate': [0.1],
-                    'colsample_bytree': [0.5,1]
+                    #'learning_rate': [0.1],
+                    #'colsample_bytree': [0.5,1]
                     }
 
     s = msl.StratifiedShuffleSplit(n_splits=3,test_size=0.35)
@@ -251,7 +265,7 @@ def hyperparams_tuning(classifier_instance,dataframe,known_ligs):
     
     grid_search = msl.GridSearchCV(classifier_instance,params_dict,cv=tt_split)
     grid_results = grid_search.fit(dataframe,known_ligs)
-
+    
     return (grid_results.best_estimator_,grid_results.best_params_,grid_results.cv_results_)
 
     
