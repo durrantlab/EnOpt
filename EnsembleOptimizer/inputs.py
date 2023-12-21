@@ -78,7 +78,16 @@ def create_argparser():
         Default: 3.",
         action = "store", dest = "topn_confs")
     
+    optimization_args.add_argument("--hyperparameterOpt", help = "Indicates whether to perform \
+            hyperparameter optimization for tree models. Default: False (default tree model \
+            parameters will be used).",
+        action = "store_true", dest = "hyperparam")
 
+    optimization_args.add_argument("--treeParameterDict", help = "Json file specifying \
+            tree model parameters provided by the user. If not provided, default tree model \
+            parameters will be used.",
+        action = "store", dest = "tree_params")
+    
     # return the argument parser
     return optimizer_args
 
@@ -144,6 +153,13 @@ def handle_command_line(argument_parser):
         except:
             print("Top N conformations must specify an integer. Default value is 3.")
             sys.exit(0)
+    
+    if args.hyperparam is None:
+        args.hyperparam = False
+
+    if args.tree_params != None:
+        json_file = args.tree_params
+        args.tree_params = vars(json.load(f))
 
     # output: set default if not specified
     if args.out_file is None:
