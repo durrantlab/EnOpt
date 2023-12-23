@@ -126,7 +126,7 @@ def handle_command_line(argument_parser):
 
     # scoring: scoring scheme is properly specified, or set default
     if args.scoring_scheme is None:
-    	args.scoring_scheme = 'eA'
+        args.scoring_scheme = 'eA'
     if args.scoring_scheme != None and args.scoring_scheme not in ['eA','eB','rA','rB']:
         print("Scoring scheme must be one of 'eA' (Ensemble Average), \
             'eB' (Ensemble Best), 'rA' (Ranked Average), or 'rB' (Ranked Best).")

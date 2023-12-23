@@ -1,64 +1,135 @@
 # EnOpt
-Ensemble Optimizer (EnOpt) is a fast, accessible tool that
-streamlines ensemble-docking and consensus-score analysis. EnOpt takes as input a matrix of docking scores
-from an ensemble virtual screen, organized as compounds (rows) X protein conformations (columns), and uses 
-simple, interpretable machine learning to identify most-predictive subensembles and an ensemble composite score. 
 
-## Usage and options
-Prior to using EnOpt, you will need to ensure that you have all a python enviroment with all necessary packages (such as NumPy, Pandas, SciPy, etc.)
-installed and accessible. We have provided a conda specification file to make it easier to set up an environment with all necessary packages.
-To do so, you can use the command `conda create --name [environment name] --file conda_spec_file.txt`
+Ensemble Optimizer (EnOpt) is a fast, accessible tool that streamlines
+ensemble-docking and consensus-score analysis. EnOpt takes as input a matrix of
+docking scores from an ensemble virtual screen, organized as compounds (rows) X
+protein conformations (columns). It uses simple, interpretable machine learning
+to identify most-predictive subensembles and an ensemble composite score.
 
-`python ensemble_optimizer.py --help` will print a guide with all standard options and their usage.
+## Setup
 
-### Simple usage 
-The simplest use of EnOpt uses the command `python ensembe_optimizer.py -f [input file matrix]`
+Before using EnOpt, ensure that you have installed a python enviroment with all
+necessary packages (e.g., NumPy, Pandas, SciPy, etc.). We have provided a conda
+specification file to make it easier to set up an environment with all necessary
+packages:
 
-### Standard options
-**Required:**
+```bash
+conda create --name [environment name] --file conda_spec_file.txt
+```
 
--f INPUT\_FILE
-> Input CSV file containing the ensemble docking score matrix. Can be obtained by running `generate_score_matrix.py` in a nested directory of docking output.
-See `generate_score_matrix.py` for details. 
+To print a guide with all standard options and their usage:
 
-**Input and output:**
+```bash
+python ensemble_optimizer.py --help
+```
 
---outFile OUT\_FILE                         
-> Prefix of output file.
+## Simple usage
 
--l KNOWN\_LIGS, --knownLigs KNOWN\_LIGS     
-> File containing names of known ligands separated by commas.
+An example of the simplest use of EnOpt:
 
-**Scoring:**
+```bash
+python ensembe_optimizer.py -f [input file matrix]
+```
 
---scoringScheme SCORING\_SCHEME
-> Scoring scheme to use for combining scores across conformations. One of 'eA', 'eB', 'rA', or 'rB'. 'eA' uses the average score across all conformations
-in the ensemble. 'eB' uses the best score across all conformations. 'rA' uses the average of the score rank for each conformation. 'rB' uses the best-
-ranked score across all conformations. Default: eA.
+## Options
 
---weightedScore       
-> Whether or not to compute weights optimized using tree models. Optimization is done using known ligands if included, and score rankings if not included.
+### Input options
 
---invertScoreSign     
-> Whether to use higher (more positive) scores as describing stronger binding. This is dependent on the docking system used; for example, smina uses more negative scores to represent stronger binding. Default: False (meaning that more negative scores represent stronger binding).
+The input CSV file containing the ensemble docking score matrix (required):
 
-**Optimization:**
+```
+-f INPUT_FILE
+```
 
---optimizationMethod OPT\_METHOD
-> Method to determine weighted scores. One of 'RF' (Random Forest) or 'XGB' (Gradient-boosted trees). Default: RF.
+<sup>(You can generate this file by running `generate_score_matrix.py` in a
+nested directory of docking output file. See `generate_score_matrix.py` for
+details.)</sup>
 
---topConformations TOPN\_CONFS
-> Number of top conformations to include in the 'best subensemble'. Default: 3.
-input and output:
---outFile OUT\_FILE                         Prefix of output file.
--l KNOWN\_LIGS, --knownLigs KNOWN\_LIGS     File containing names of known ligands separated by commas.
+A file containing the names of known ligands, separated by commas:
+
+```
+-l KNOWN_LIGS, --knownLigs KNOWN_LIGS
+```
+
+### Output options
+
+The prefix of the output file:
+
+```
+--outFile OUT_FILE
+```
+
+### Scoring options
+
+The scoring scheme to use for combining scores across conformations:
+
+```
+--scoringScheme SCORING_SCHEME
+```
+
+<sup>(One of "eA", "eB", "rA", or "rB". "eA" uses the average score across all
+conformations in the ensemble. "eB" uses the best score across all
+conformations. "rA" uses the average of the score rank for each conformation.
+"rB" uses the best-ranked score across all conformations. Default: eA.)</sup>
+
+Whether to compute weights optimized using tree models:
+
+```
+--weightedScore
+```
+
+<sup>(EnOpt performs optimization using known ligands if included. Otherwise, it
+uses score rankings; not recommended.)</sup>
+
+Whether higher (more positive) scores describing stronger binding:
+
+```
+--invertScoreSign
+```
+
+<sup>(The scheme depends on the docking program used; for example, smina uses
+more negative scores to represent stronger binding. Default: False, meaning that
+more negative scores represent stronger binding.)</sup>
+
+### Optimization options
+
+Method to determine weighted scores:
+
+```
+--optimizationMethod OPT_METHOD
+```
+
+<sup>(One of "RF", Random Forest, or "XGB", Gradient-boosted trees. Default: RF.)</sup>
+
+Number of top conformations to include in the "best subensemble":
+
+```
+--topConformations TOPN_CONFS
+```
+
+<sup>(Default: 3)</sup>
+
+<!-- input and output:
+
+```
+--outFile OUT_FILE                         Prefix of output file.
+-l KNOWN_LIGS, --knownLigs KNOWN_LIGS     File containing names of known ligands separated by commas.
+``` -->
 
 ## Paper/lab link
-Find more tools for analysis of protein-ligand binding at https://durrantlab.pitt.edu/durrant-lab-software/. 
+
+Find more tools for analysis of protein-ligand binding at
+[https://durrantlab.pitt.edu/durrant-lab-software/](https://durrantlab.pitt.edu/durrant-lab-software/).
 
 ## Contact info
-For questions, suggestions, or problems with the tool contact Roshni Bhatt at rob108@pitt.edu. 
+
+For questions, suggestions, or problems with the tool contact Roshni Bhatt at
+[rob108@pitt.edu](mailto:rob108@pitt.edu).
 
 ## Acknowledgements
-This work was supported by the National Institute of Health (1R01GM132353-01) and the University of Pittsburgh’s Center for Research Computing, RRID:SCR\_022735 (supported by NSFOAC-2117681). We would like to thank Yogindra Raghav for his contributions in generating initial proof-of-concept code. We also thank Darian Yang for assistance in collating and pruning ideas.
 
+This work was supported by the National Institute of Health (1R01GM132353-01)
+and the University of Pittsburgh's Center for Research Computing,
+RRID:SCR\_022735 (supported by NSFOAC-2117681). We would like to thank Yogindra
+Raghav for his contributions in generating initial proof-of-concept code. We
+also thank Darian Yang for assistance in collating and pruning ideas.
