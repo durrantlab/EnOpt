@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import sys
+import textwrap
 
 import numpy as np 
 import pandas as pd 
@@ -70,7 +71,7 @@ def create_argparser():
 
     optimization_args.add_argument("--optimizationMethod", help = "Method to determine \
         weighted scores. One of 'RF' (Random Forest) or 'XGB' (Gradient-boosted trees). \
-        Default: RF.",
+        Default: XGB.",
         action = "store", dest = "opt_method")
 
     optimization_args.add_argument("--topConformations", help = "Number of top conformations \
@@ -115,10 +116,9 @@ def handle_command_line(argument_parser):
 
     # check known ligands param
     if args.known_ligs == None:
-        print("It is highly recommended to include known ligands in your\
-                dataset. If you do not include known ligands, EnOpt will\
-                not be able to train a tree classifier to identify potential\
-                novel actives.")
+        warning_message = "It is highly recommended to include known ligands in your dataset. \
+        If you do not include known ligands, EnOpt will not be able to train a tree classifier to identify potential novel actives."
+        print(textwrap.fill(warning_message))
         args.weighted_score = False
     if args.known_ligs != None and not ".csv" in args.known_ligs:
         print("Known ligands file must be in .csv format.")
@@ -128,8 +128,7 @@ def handle_command_line(argument_parser):
     if args.scoring_scheme is None:
         args.scoring_scheme = 'eA'
     if args.scoring_scheme != None and args.scoring_scheme not in ['eA','eB','rA','rB']:
-        print("Scoring scheme must be one of 'eA' (Ensemble Average), \
-            'eB' (Ensemble Best), 'rA' (Ranked Average), or 'rB' (Ranked Best).")
+        print("Scoring scheme must be one of 'eA' (Ensemble Average), 'eB' (Ensemble Best), 'rA' (Ranked Average), or 'rB' (Ranked Best).")
         sys.exit(0)
 
     if args.invert_score_sign is None:
@@ -137,7 +136,7 @@ def handle_command_line(argument_parser):
 
     # optimization: method is properly specified, or set default
     if args.opt_method is None:
-        args.opt_method = 'RF'
+        args.opt_method = 'XGB'
     elif args.opt_method not in ['RF','XGB']:
         print("Optimization method must be one of 'RF' or 'XGB'.")
         sys.exit(0)
@@ -159,7 +158,8 @@ def handle_command_line(argument_parser):
 
     if args.tree_params != None:
         json_file = args.tree_params
-        args.tree_params = vars(json.load(f))
+        with open(json_file) as f:
+            args.tree_params = json.load(f)
 
     # output: set default if not specified
     if args.out_file is None:
