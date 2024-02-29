@@ -2,7 +2,7 @@ This directory contains demo and testing files for EnOpt.
 
 # Example inputs:
 `demo_input_scores.csv` is a file containing an example score matrix for input to EnOpt.
-This score matrix was generated using structures and compounds of HXK4 from the DUD-E database.
+This score matrix was generated using structures and compounds of HXK4 from the [DUD-E database](https://dude.docking.org/targets/hxk4).
 
 `demo_input_knowns.csv` is a file containing an example list of positive controls (known ligands) for HXK4,
 to be used with `demo_input_scores.csv` as input to EnOpt.
