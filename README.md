@@ -41,10 +41,6 @@ The input CSV file containing the ensemble docking score matrix (required):
 -f INPUT_FILE
 ```
 
-<sup>(You can generate this file by running `generate_score_matrix.py` in a
-nested directory of docking output file. See `generate_score_matrix.py` for
-details.)</sup>
-
 A file containing the names of known ligands, separated by commas:
 
 ```
