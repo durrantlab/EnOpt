@@ -10,6 +10,9 @@ to be used with `demo_input_scores.csv` as input to EnOpt.
 `demo_tree_params.json` is an example json file containing parameters for training the tree models. This is an
 optional input to EnOpt for when hyperparameter optimization is not used.
 
+`demo_json_input.json` is an example json file containing parameters for running EnOpt. This is an
+alternative to the command line input format to EnOpt, and does not require any other flags.
+
 # Example outputs:
 `demo_output.csv` is an example output file containing the input compounds as ranked by EnOpt.
 

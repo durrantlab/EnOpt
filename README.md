@@ -47,6 +47,11 @@ A file containing the names of known ligands, separated by commas:
 -l KNOWN_LIGS, --knownLigs KNOWN_LIGS
 ```
 
+A JSON file containing all user-specified EnOpt input parameters, as an alternative to the command line input:
+```
+--json_input JSON_INPUT
+```
+
 ### Output options
 
 The prefix of the output file:
@@ -54,6 +59,18 @@ The prefix of the output file:
 ```
 --outFile OUT_FILE
 ```
+
+The number of known ligands to include in interactive output:
+```
+--top_known_out TOP_KNOWN_OUT
+```
+
+The number of unknowns (compounds that are not known ligands) to include in interactive output:
+```
+--top_unknown_out TOP_UNKNOWN_OUT
+```
+
+
 
 ### Scoring options
 
@@ -104,6 +121,20 @@ Number of top conformations to include in the "best subensemble":
 ```
 
 <sup>(Default: 3)</sup>
+
+Whether to perform hyperparameter optimization for tree models:
+```
+--hyperparam          
+```
+<sup>Default: False (default tree model parameters will be used).</sup>
+
+Optional JSON file containing user-provided parameters for optimization:
+
+```
+--tree_params TREE_PARAMS
+```
+
+<sup>If not provided, default hyperparameter optimization options will be used.</sup>
 
 <!-- input and output:
 

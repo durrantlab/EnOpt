@@ -1,0 +1,12 @@
+{
+  "file": "demo_files/demo_input_scores.csv",
+  "known_ligs": "demo_files/demo_input_known.csv",
+  "scoring_scheme": "rA",
+  "weighted_score": true,
+  "invert_score_sign": true,
+  "opt_method": "RF",
+  "topn_confs": 5,
+  "tree_params": "demo_files/demo_tree_params.json",
+  "out_file": "json_params_test"
+}
+
