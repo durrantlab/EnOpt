@@ -62,9 +62,10 @@ def output_ligands_ranked(score_data,score_matrix,weights,pred,args):
     """
     final_scores = pd.concat([score_data[0],pd.Series(score_matrix,name=args.opt_method),pd.Series(pred,name='Predicted probability')],axis=1)
     unknown_scores = final_scores[np.invert(score_data[1].astype(bool))].sort_values(by='Predicted probability',ascending=False)
+    known_scores = final_scores[score_data[1].astype(bool)].sort_values(by='Predicted probability',ascending=False)
     final_scores = final_scores.sort_values(by='Predicted probability',ascending=False)
     write_matrix(final_scores,prefix=args.out_file)
-    return final_scores, unknown_scores
+    return final_scores, known_scores, unknown_scores
 
 # output conformation weights, ranked by feature importance in predictive model
 def output_best_confs(score_data,weights,args):
@@ -89,7 +90,7 @@ def output_best_confs(score_data,weights,args):
     return confs_weights_out
 
 # make output of scoring include auc data
-def interactive_summary(score_matrix,conf_weights,aucs,args):
+def interactive_summary(known_scores,unknown_scores,score_matrix,conf_weights,aucs,args):
     """Output interactive summary of ensemble optimization results.
 
     Includes: top 20 compound probability values with hover info;
@@ -107,14 +108,16 @@ def interactive_summary(score_matrix,conf_weights,aucs,args):
         None: outputs html file of interactive summary. 
     """
     fig = make_subplots(4,1,
-                        subplot_titles=['Top 20 Compounds Predicted Active Probability',
-                                        'Top 20 Compounds Docking Score Distribution',
+                        subplot_titles=["Top %s Compounds Predicted Active Probability"%(str(args.top_known_out+args.top_unknown_out)),
+                                        "Top %s Compounds Docking Score Distribution"%(str(args.top_known_out+args.top_unknown_out)),
                                         'Best-score Frequency Per Conformation',
                                         ' '])
     fig.update_layout(width=950,height=2000)
 
     # top N% compound Prob. values (Bar) and ranges (Box)
-    topn = score_matrix[:20]
+    topn_known = known_scores[:args.top_known_out]
+    topn_unknown = unknown_scores[:args.top_unknown_out]
+    topn = pd.concat([topn_known,topn_unknown]).sort_values(by='Predicted probability',ascending=False)
     bar_hover = []
     box_hover = []
     color_index = 0
@@ -132,7 +135,7 @@ def interactive_summary(score_matrix,conf_weights,aucs,args):
         #fig.add_trace(pg.Box(x0=lig[1],y=lig[2:-3],hoverinfo='y',hovertext=box_hover),row=2,col=1)
 
     #fig.add_trace(pg.Bar(x=topn['Ligand'],y=topn['Predicted probability'],hoverinfo='text',hovertext=bar_hover),row=1,col=1)
-
+ 
     # top 3 conformations info
     if args.invert_score_sign is True:
         top_conf_counts = score_matrix[score_matrix.columns[2:-3]].idxmax(axis=1).value_counts()
@@ -160,8 +163,8 @@ def interactive_summary(score_matrix,conf_weights,aucs,args):
 
     fig.update_traces(showlegend=False)
 
-    fig.update_xaxes(title_text='Compound (of top 20)', row=1,col=1)
-    fig.update_xaxes(title_text='Compound (of top 20)', row=2,col=1)
+    fig.update_xaxes(title_text="Compound (of top %s)"%(str(args.top_known_out+args.top_unknown_out)), row=1,col=1)
+    fig.update_xaxes(title_text="Compound (of top %s)"%(str(args.top_known_out+args.top_unknown_out)), row=2,col=1)
     fig.update_xaxes(title_text='Protein conformation', row=3,col=1)
 
     fig.update_yaxes(title_text='Predicted probability', row=1,col=1)
@@ -196,7 +199,7 @@ def organize_output(score_data,score_matrix,weights,pred,aucs,args):
     """
     # for either knowns or no knowns 
     # output final score matrix file, csv
-    ranked_scores, ranked_unknowns = output_ligands_ranked(score_data,score_matrix,weights,pred,args)
+    ranked_scores, ranked_knowns, ranked_unknowns = output_ligands_ranked(score_data,score_matrix,weights,pred,args)
 
     # output weights table (all confs), csv
     best_confs = output_best_confs(score_data,weights,args)
@@ -206,7 +209,7 @@ def organize_output(score_data,score_matrix,weights,pred,aucs,args):
     
     # output image summary
     # currently only includes the non-actives
-    interactive_summary(ranked_unknowns,best_confs,aucs,args)
+    interactive_summary(ranked_knowns,ranked_unknowns,ranked_scores,best_confs,aucs,args)
 
 
     

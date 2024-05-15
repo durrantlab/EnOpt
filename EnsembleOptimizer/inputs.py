@@ -27,25 +27,37 @@ def create_argparser():
     ### REQUIRED  ###
     required_args = optimizer_args.add_argument_group("Required Arguments")
 
-    required_args.add_argument("-f", "--file", required = True, help = "The \
+    required_args.add_argument("-f", "--file", required = False, help = "The \
     CSV file containing the docking matrix that will be analyzed.", 
         action = 'store', dest = "file")
+    
+    required_args.add_argument("--json_input", required = False, 
+        help = "JSON file containing dict of input parameters",
+        action = 'store', dest = "json_input")
     
     ### IN/OUT ###
     in_out_args = optimizer_args.add_argument_group('input_output')
 
-    in_out_args.add_argument("--outFile", help = "Prefix of output file.",
+    in_out_args.add_argument("--out_file", help = "Prefix of output file.",
         action = "store", dest = "out_file")
     
-    in_out_args.add_argument("-l", "--knownLigs", required = False, 
+    in_out_args.add_argument("-l", "--known_ligs", required = False, 
         help = "File containing names of known ligands separated by commas.",
         action = 'store', dest = "known_ligs")
+
+    in_out_args.add_argument("--top_known_out", help = "Number of known ligands \
+        to include in interactive output.",
+        action = "store", dest = "top_known_out")
+    
+    in_out_args.add_argument("--top_unknown_out", help = "Number of unknowns \
+        (compounds that are not known ligands) to include in interactive output.",
+        action = "store", dest = "top_unknown_out")
     
     ### SCORING ###
     scoring_args = optimizer_args.add_argument_group('scoring')
 
     # create optional flag for weight optimization scoring function choice
-    scoring_args.add_argument("--scoringScheme", help = "Scoring scheme to use for \
+    scoring_args.add_argument("--scoring_scheme", help = "Scoring scheme to use for \
         combining scores across conformations. One of 'eA', 'eB', 'rA', or 'rB'. \
         'eA' uses the average score across all conformations in the ensemble. 'eB' uses \
         the best score across all conformations. 'rA' uses the average of the score rank \
@@ -54,12 +66,12 @@ def create_argparser():
         action = "store", dest = "scoring_scheme")
     
     # create optional flag for output of weighted ensemble score functions
-    scoring_args.add_argument("--weightedScore", help = "Whether or not to \
+    scoring_args.add_argument("--weighted_score", help = "Whether or not to \
         compute weights optimized using tree models. Optimization is done \
         using known ligands if included, and score rankings if not included.",
         action = "store_true", dest = "weighted_score")
 
-    scoring_args.add_argument("--invertScoreSign", help = "Whether to use \
+    scoring_args.add_argument("--invert_score_sign", help = "Whether to use \
         higher (more positive) scores as describing stronger binding. This is \
         dependent on the docking system used; for example, smina uses more negative \
         scores to represent stronger binding. Default: False (meaning that more negative \
@@ -69,22 +81,22 @@ def create_argparser():
     ### OPTIMIZATION ###
     optimization_args = optimizer_args.add_argument_group('optimization')
 
-    optimization_args.add_argument("--optimizationMethod", help = "Method to determine \
+    optimization_args.add_argument("--opt_method", help = "Method to determine \
         weighted scores. One of 'RF' (Random Forest) or 'XGB' (Gradient-boosted trees). \
         Default: XGB.",
         action = "store", dest = "opt_method")
 
-    optimization_args.add_argument("--topConformations", help = "Number of top conformations \
+    optimization_args.add_argument("--topn_confs", help = "Number of top conformations \
         to include in the 'best subensemble'. \
         Default: 3.",
         action = "store", dest = "topn_confs")
     
-    optimization_args.add_argument("--hyperparameterOpt", help = "Indicates whether to perform \
+    optimization_args.add_argument("--hyperparam", help = "Indicates whether to perform \
             hyperparameter optimization for tree models. Default: False (default tree model \
             parameters will be used).",
         action = "store_true", dest = "hyperparam")
 
-    optimization_args.add_argument("--treeParameterDict", help = "Json file specifying \
+    optimization_args.add_argument("--tree_params", help = "Json file specifying \
             tree model parameters provided by the user. If not provided, default tree model \
             parameters will be used.",
         action = "store", dest = "tree_params")
@@ -92,6 +104,12 @@ def create_argparser():
     # return the argument parser
     return optimizer_args
 
+def handle_json(args):
+    with open(args.json_input,'r') as f:
+        j = json.load(f)
+        for k in j.keys():
+            setattr(args,k,j[k])
+    return args
 
 def handle_command_line(argument_parser):
     """Check for errors/inconsistencies and set defaults for args.
@@ -108,6 +126,10 @@ def handle_command_line(argument_parser):
     """
     # check args for inconsistencies or issues
     args = argument_parser.parse_args()
+    
+    # check for json input
+    if args.json_input != None:
+        args = handle_json(args)
 
     # inputs: file exists and is correct format
     if not os.path.exists(args.file) or not ".csv" in args.file:
@@ -164,7 +186,13 @@ def handle_command_line(argument_parser):
     # output: set default if not specified
     if args.out_file is None:
         args.out_file = "enopt"
+    
+    if args.top_known_out is None:
+        args.top_known_out = 1
 
+    if args.top_unknown_out is None:
+        args.top_unknown_out = 19
+    
     print(vars(args))
     return args 
 
