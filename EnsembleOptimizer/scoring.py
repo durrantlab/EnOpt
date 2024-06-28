@@ -4,7 +4,7 @@ import sklearn.ensemble as ens
 import sklearn.model_selection as msl
 import xgboost as xgb
 
-from .evaluation import rocauc
+from .evaluation import rocauc, prauc, bedroc, topn
 
 # scoring functions (regular average vs. weighted average) of whole dataframe
 
@@ -138,15 +138,21 @@ def get_weights_RF(dataframe,known_ligs,args):
     rfc = rfc.set_params(**params)
     
     # cv
-    cv_results = cv(rfc,unw_ens.to_numpy()[:,1:-1],known_ligs) 
-    rfc_final = cv_results[0]
-    aucs = cv_results[1]
+    cv_results = cv(rfc,unw_ens.to_numpy()[:,1:-1],known_ligs,8) 
+    rfc_models = cv_results[0]
+    wts = cv_results[1]
+    aucs = cv_results[2]
+    test_splits = cv_results[3]
 
-    wts = rfc.feature_importances_
-    pred = rfc.predict_proba(unw_ens.to_numpy()[:,1:-1])
-    return (np.matmul(unw_ens.to_numpy()[:,1:-1],wts), pd.Series(wts,index=unw_ens.columns[1:-1]), pred[:,1], aucs)
-        
+    pred = np.zeros(len(unw_ens))
+    mult = np.zeros(len(unw_ens))
+    for i in range(3):
+        pred[test_splits[i]] = rfc_models[i].predict_proba(unw_ens.to_numpy()[test_splits[i],1:-1])[:,1]
+        mult[test_splits[i]] = np.matmul(unw_ens.to_numpy()[:,1:-1][test_splits[i]],wts[i])
 
+    return (mult, pd.DataFrame(wts,columns=unw_ens.columns[1:-1]), pred, aucs)
+
+    
 def get_weights_XGB(dataframe,known_ligs,args):
     """Fits gradient-boosted tree model from XGBoost to docking score data.
     
@@ -193,16 +199,22 @@ def get_weights_XGB(dataframe,known_ligs,args):
     xgbc = xgbc.set_params(**params)
     
     # cv
-    cv_results = cv(xgbc,unw_ens.to_numpy()[:,1:-1],known_ligs)
-    xgbc_final = cv_results[0]
-    aucs = cv_results[1]
+    cv_results = cv(xgbc,unw_ens.to_numpy()[:,1:-1],known_ligs,8)
+    xgbc_models = cv_results[0]
+    wts = cv_results[1]
+    aucs = np.array(cv_results[2])
+    test_splits = cv_results[3] 
 
-    wts = xgbc_final.feature_importances_
-    pred = xgbc_final.predict_proba(unw_ens.to_numpy()[:,1:-1])
-    return (np.matmul(unw_ens.to_numpy()[:,1:-1],wts), pd.Series(wts,index=unw_ens.columns[1:-1]), pred[:,1], aucs)
+    pred = np.zeros(len(unw_ens))
+    mult = np.zeros(len(unw_ens))
+    for i in range(3):
+        pred[test_splits[i]] = xgbc_models[i].predict_proba(unw_ens.to_numpy()[test_splits[i],1:-1])[:,1]
+        mult[test_splits[i]] = np.matmul(unw_ens.to_numpy()[:,1:-1][test_splits[i]],wts[i])
+
+    return (mult, pd.DataFrame(wts,columns=unw_ens.columns[1:-1]), pred, aucs)
 
 
-def cv(classifier_instance,dataframe,known_ligs):
+def cv(classifier_instance,dataframe,known_ligs,topn_value):
     """Performs 3-fold cross validation for tree classifiers.
     
     Uses scikit-learn's data split/shuffle to generate three left-out 
@@ -222,21 +234,29 @@ def cv(classifier_instance,dataframe,known_ligs):
             )
     """
     models = []
+    weights = []
     aucs = []
+    test_splits = []
     s = msl.StratifiedShuffleSplit(n_splits=3,test_size=0.35)
     tt_split = s.split(np.zeros(len(dataframe)),known_ligs)
     
     for i, tdat in enumerate(tt_split):
         m = classifier_instance.fit(dataframe[tdat[0]],known_ligs[tdat[0]])
-        w = m.feature_importances_
         p = m.predict_proba(dataframe[tdat[1]])
         aucval = rocauc(known_ligs[tdat[1]],p[:,1])
+        
+        prcval = prauc(known_ligs[tdat[1]],p[:,1])
+        brcval = bedroc(known_ligs[tdat[1]],p[:,1])
+        efval = topn(topn_value,known_ligs[tdat[1]],p[:,1])
+        
         models.append(m)
-        aucs.append(aucval[0])
+        weights.append(m.feature_importances_)
+        aucs.append([aucval[0],prcval[0],brcval,efval])
+        test_splits.append(tdat[1])
     
-    cv_model = models[np.argmax(aucs)]
+    #cv_model = models[np.argmax(aucs)]
     
-    return (cv_model, aucs)
+    return (models,weights,aucs,test_splits)
 
 
 def hyperparams_tuning(classifier_instance,dataframe,known_ligs):

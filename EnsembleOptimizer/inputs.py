@@ -188,10 +188,11 @@ def handle_command_line(argument_parser):
         args.out_file = "enopt"
     
     if args.top_known_out is None:
-        args.top_known_out = 1
+        k = pd.read_csv(args.known_ligs,header=None)
+        args.top_known_out = len(k)#1
 
     if args.top_unknown_out is None:
-        args.top_unknown_out = 19
+        args.top_unknown_out = 50#19
     
     print(vars(args))
     return args 

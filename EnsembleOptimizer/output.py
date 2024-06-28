@@ -79,15 +79,15 @@ def output_best_confs(score_data,weights,args):
     Returns:
         pd.DataFrame: conformations with weights and top N indication included.
     """
-    topn = np.argsort(weights)[-(int(args.topn_confs)):]
-    confs_rank = np.zeros(len(weights)).astype(bool)
-    confs_rank[topn] = True
-    confs_rank = pd.Series(confs_rank,index=weights.index,name='Best subensemble (%s)'%args.topn_confs)
-   
-    weights.name = 'Conformation weight from '+args.opt_method
-    confs_weights_out = pd.concat([weights,confs_rank],axis=1)
+    confs_weights_out = pd.DataFrame(index=['Conformation weight Model 1','Best subens. Model 1','Conformation weight Model 2','Best subens. Model 2','Conformation weight Model 3','Best subens. Model 3'],columns=weights.columns)
+    for i in range(len(weights)):
+        topn = np.argsort(weights.iloc[i,:])[-(int(args.topn_confs)):]
+        confs_rank = np.zeros(len(weights.iloc[i,:])).astype(bool)
+        confs_rank[topn] = True
+        confs_weights_out.iloc[i*2,:] = weights.iloc[i,:]
+        confs_weights_out.iloc[i*2+1,:] = confs_rank
     write_matrix(confs_weights_out,prefix=args.out_file+'_conformations',weights_index=True)
-    return confs_weights_out
+    return confs_weights_out.iloc[[1,3,5],:].sum(axis=0)
 
 # make output of scoring include auc data
 def interactive_summary(known_scores,unknown_scores,score_matrix,conf_weights,aucs,args):
@@ -127,7 +127,7 @@ def interactive_summary(known_scores,unknown_scores,score_matrix,conf_weights,au
         eb = np.max(lig[2:-3])
         bar_hover = ["Predicted probability: %s<br> Ensemble average: %s<br> Ensemble best: %s"%(round(prob,4), round(ea,3), round(eb,3))]
 
-        ligs_color = pc.qualitative.Light24[color_index]
+        ligs_color = pc.qualitative.Light24[color_index%(len(pc.qualitative.Light24))]
         fig.add_trace(pg.Bar(x=[lig[1]],name=lig[1],y=[prob],hoverinfo='text',hovertext=bar_hover,marker_color=ligs_color),row=1,col=1)
         fig.add_trace(pg.Box(name=lig[1],y=lig[1:-3],hoverinfo='y',marker_color=ligs_color),row=2,col=1)
         color_index +=1 
@@ -142,13 +142,14 @@ def interactive_summary(known_scores,unknown_scores,score_matrix,conf_weights,au
     else:
         top_conf_counts = score_matrix[score_matrix.columns[2:-3]].idxmin(axis=1).value_counts()
     
-    confs_dict = {'colors':{'True': 'limegreen', 'False': 'orangered'},
-                  'text':{'True': 'Top %s predicitive conformations (from tree model)'%(args.topn_confs), 'False': None}}
+    confs_dict = {'colors':{'3': 'limegreen', '2': 'limegreen', '1': 'yellow', '0': 'orangered'},
+                  'text':{'True': 'Top %s predictive conformations (from tree model)'%(args.topn_confs), 'False': None}}
+    confs_max = conf_weights.argsort()>(len(conf_weights)-int(args.topn_confs))
     confs_hover = []
     confs_color = []
-    for i in conf_weights['Best subensemble (%s)'%(args.topn_confs)]:
-        confs_hover.append(confs_dict['text'][str(i)])
-        confs_color.append(confs_dict['colors'][str(i)])
+    for i in range(len(conf_weights)):
+        confs_hover.append(confs_dict['text'][str(confs_max[i])])
+        confs_color.append(confs_dict['colors'][str(conf_weights[i])])
 
     fig.add_trace(pg.Bar(x=top_conf_counts.index,y=top_conf_counts,marker_color=confs_color,hoverinfo='text',hovertext=confs_hover),row=3,col=1)
 
@@ -205,11 +206,12 @@ def organize_output(score_data,score_matrix,weights,pred,aucs,args):
     best_confs = output_best_confs(score_data,weights,args)
 
     # save CV data (for knowns only)
-    np.savetxt(args.out_file+'_cv.csv',aucs)
+    auc_out = pd.DataFrame(aucs,index=['Model 1','Model 2','Model 3'],columns=['AUROC','PRAUC','BEDROC','Enrichment Factor'])
+    auc_out.to_csv(args.out_file+'_cv.csv')
     
     # output image summary
     # currently only includes the non-actives
-    interactive_summary(ranked_knowns,ranked_unknowns,ranked_scores,best_confs,aucs,args)
+    interactive_summary(ranked_knowns,ranked_unknowns,ranked_scores,best_confs,aucs[:,0],args)
 
 
     
