@@ -130,7 +130,7 @@ def get_weights_RF(dataframe,known_ligs,args):
 
     if args.hyperparam:
         # params cv
-        cv_results = hyperparams_tuning(rfc,unw_ens.to_numpy()[:,1:-1],known_ligs)
+        cv_results = hyperparams_tuning(rfc,unw_ens.to_numpy()[:,1:-1],known_ligs,args)
         rfc = cv_results[0]
         params = cv_results[1]
         print(params)
@@ -138,7 +138,7 @@ def get_weights_RF(dataframe,known_ligs,args):
     rfc = rfc.set_params(**params)
     
     # cv
-    cv_results = cv(rfc,unw_ens.to_numpy()[:,1:-1],known_ligs,8) 
+    cv_results = cv(unw_ens.to_numpy()[:,1:-1],known_ligs,8,rfc) 
     rfc_models = cv_results[0]
     wts = cv_results[1]
     aucs = cv_results[2]
@@ -189,7 +189,7 @@ def get_weights_XGB(dataframe,known_ligs,args):
 
     if args.hyperparam:
         # params cv
-        cv_results = hyperparams_tuning(xgbc,unw_ens.to_numpy()[:,1:-1],known_ligs)
+        cv_results = hyperparams_tuning(xgbc,unw_ens.to_numpy()[:,1:-1],known_ligs,args)
         xgbc = cv_results[0]
         params = cv_results[1]
        
@@ -199,7 +199,7 @@ def get_weights_XGB(dataframe,known_ligs,args):
     xgbc = xgbc.set_params(**params)
     
     # cv
-    cv_results = cv(xgbc,unw_ens.to_numpy()[:,1:-1],known_ligs,8)
+    cv_results = cv(unw_ens.to_numpy()[:,1:-1],known_ligs,8,xgbc)
     xgbc_models = cv_results[0]
     wts = cv_results[1]
     aucs = np.array(cv_results[2])
@@ -214,7 +214,7 @@ def get_weights_XGB(dataframe,known_ligs,args):
     return (mult, pd.DataFrame(wts,columns=unw_ens.columns[1:-1]), pred, aucs)
 
 
-def cv(classifier_instance,dataframe,known_ligs,topn_value):
+def cv(dataframe,known_ligs,topn_value,classifier_instance):
     """Performs 3-fold cross validation for tree classifiers.
     
     Uses scikit-learn's data split/shuffle to generate three left-out 
@@ -239,7 +239,6 @@ def cv(classifier_instance,dataframe,known_ligs,topn_value):
     test_splits = []
     s = msl.StratifiedShuffleSplit(n_splits=3,test_size=0.35)
     tt_split = s.split(np.zeros(len(dataframe)),known_ligs)
-    
     for i, tdat in enumerate(tt_split):
         m = classifier_instance.fit(dataframe[tdat[0]],known_ligs[tdat[0]])
         p = m.predict_proba(dataframe[tdat[1]])
@@ -253,13 +252,12 @@ def cv(classifier_instance,dataframe,known_ligs,topn_value):
         weights.append(m.feature_importances_)
         aucs.append([aucval[0],prcval[0],brcval,efval])
         test_splits.append(tdat[1])
-    
     #cv_model = models[np.argmax(aucs)]
     
     return (models,weights,aucs,test_splits)
 
 
-def hyperparams_tuning(classifier_instance,dataframe,known_ligs):
+def hyperparams_tuning(classifier_instance,dataframe,known_ligs,args):
     """Wraps tree model training functions when hyperparam tuning
     is requested, and returns best hyperparameters for tree model
     fitting.
@@ -274,11 +272,17 @@ def hyperparams_tuning(classifier_instance,dataframe,known_ligs):
     Returns:
         params dictionary
     """
-    params_dict = {'n_estimators': [15,50,100,200],
-                    'max_depth': [2,5,10],
-                    #'learning_rate': [0.1],
-                    #'colsample_bytree': [0.5,1]
-                    }
+    if args.opt_method == 'XGB':
+        params_dict = {'n_estimators': [15,50,100,150,200],
+                        'max_depth': [2,5,10],
+                        'learning_rate': [0.05,0.1,0.15],
+                        'cosample_bynode': [0.2,0.5,1]
+                        }
+    elif args.opt_method == 'RF':
+        params_dict = {'n_estimators': [15,50,100,200],
+                        'max_depth': [2,5,10],
+                        'max_features': [0.2,0.5,1]
+                        }
 
     s = msl.StratifiedShuffleSplit(n_splits=3,test_size=0.35)
     tt_split = s.split(np.zeros(len(dataframe)),known_ligs)
@@ -288,4 +292,30 @@ def hyperparams_tuning(classifier_instance,dataframe,known_ligs):
     
     return (grid_results.best_estimator_,grid_results.best_params_,grid_results.cv_results_)
 
+   
+def single_conformation_scores(dataframe,known_ligs,args,topn_value=8):
+    """Computes the rank-based predictions and evaluation
+    metrics for each single conformation.
     
+    Args:
+        dataframe
+        known_ligs
+
+    Returns:
+        params dictionary
+    """
+    aucs_dict = {}
+    for col in dataframe.columns[1:]:
+        if args.invert_score_sign:
+            single_col = dataframe[col].sort_values(ascending=False)
+        else:
+            single_col = dataframe[col].sort_values(ascending=True)
+        
+        aucval = rocauc(known_ligs,single_col)
+        prcval = prauc(known_ligs,single_col)
+        brcval = bedroc(known_ligs,single_col)
+        efval = topn(topn_value,known_ligs,single_col)
+        
+        aucs_dict[col] = [aucval[0],prcval[0],brcval,efval]
+
+    return aucs_dict
