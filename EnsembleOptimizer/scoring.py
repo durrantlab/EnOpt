@@ -138,7 +138,7 @@ def get_weights_RF(dataframe,known_ligs,args):
     rfc = rfc.set_params(**params)
     
     # cv
-    cv_results = cv(unw_ens.to_numpy()[:,1:-1],known_ligs,8,rfc) 
+    cv_results = cv(unw_ens.to_numpy()[:,1:-1],known_ligs,20,rfc) 
     rfc_models = cv_results[0]
     wts = cv_results[1]
     aucs = cv_results[2]
@@ -199,7 +199,7 @@ def get_weights_XGB(dataframe,known_ligs,args):
     xgbc = xgbc.set_params(**params)
     
     # cv
-    cv_results = cv(unw_ens.to_numpy()[:,1:-1],known_ligs,8,xgbc)
+    cv_results = cv(unw_ens.to_numpy()[:,1:-1],known_ligs,20,xgbc)
     xgbc_models = cv_results[0]
     wts = cv_results[1]
     aucs = np.array(cv_results[2])
