@@ -146,11 +146,13 @@ def get_weights_RF(dataframe,known_ligs,args):
 
     pred = np.zeros(len(unw_ens))
     mult = np.zeros(len(unw_ens))
+    model = np.zeros(len(unw_ens))
     for i in range(3):
         pred[test_splits[i]] = rfc_models[i].predict_proba(unw_ens.to_numpy()[test_splits[i],1:-1])[:,1]
         mult[test_splits[i]] = np.matmul(unw_ens.to_numpy()[:,1:-1][test_splits[i]],wts[i])
+        model[test_splits[i]] = i+1
 
-    return (mult, pd.DataFrame(wts,columns=unw_ens.columns[1:-1]), pred, aucs)
+    return (mult, pd.DataFrame(wts,columns=unw_ens.columns[1:-1]), pred, aucs, model)
 
     
 def get_weights_XGB(dataframe,known_ligs,args):
@@ -207,11 +209,13 @@ def get_weights_XGB(dataframe,known_ligs,args):
 
     pred = np.zeros(len(unw_ens))
     mult = np.zeros(len(unw_ens))
+    model = np.zeros(len(unw_ens))
     for i in range(3):
         pred[test_splits[i]] = xgbc_models[i].predict_proba(unw_ens.to_numpy()[test_splits[i],1:-1])[:,1]
         mult[test_splits[i]] = np.matmul(unw_ens.to_numpy()[:,1:-1][test_splits[i]],wts[i])
+        model[test_splits[i]] = i+1
 
-    return (mult, pd.DataFrame(wts,columns=unw_ens.columns[1:-1]), pred, aucs)
+    return (mult, pd.DataFrame(wts,columns=unw_ens.columns[1:-1]), pred, aucs, model)
 
 
 def cv(dataframe,known_ligs,topn_value,classifier_instance):
@@ -242,11 +246,10 @@ def cv(dataframe,known_ligs,topn_value,classifier_instance):
     for i, tdat in enumerate(tt_split):
         m = classifier_instance.fit(dataframe[tdat[0]],known_ligs[tdat[0]])
         p = m.predict_proba(dataframe[tdat[1]])
-        aucval = rocauc(known_ligs[tdat[1]],p[:,1])
-        
+        aucval = rocauc(known_ligs[tdat[1]],p[:,1]) 
         prcval = prauc(known_ligs[tdat[1]],p[:,1])
-        brcval = bedroc(known_ligs[tdat[1]],p[:,1])
-        efval = topn(topn_value,known_ligs[tdat[1]],p[:,1])
+        brcval = bedroc(known_ligs[tdat[1]],pred_ligs=p[:,1])
+        efval = topn(topn_value,known_ligs[tdat[1]],pred_ligs=p[:,1])
         
         models.append(m)
         weights.append(m.feature_importances_)
@@ -293,7 +296,7 @@ def hyperparams_tuning(classifier_instance,dataframe,known_ligs,args):
     return (grid_results.best_estimator_,grid_results.best_params_,grid_results.cv_results_)
 
    
-def single_conformation_scores(dataframe,known_ligs,args,topn_value=8):
+def single_conformation_scores(dataframe,known_ligs,args,topn_value=20):
     """Computes the rank-based predictions and evaluation
     metrics for each single conformation.
     
@@ -307,14 +310,14 @@ def single_conformation_scores(dataframe,known_ligs,args,topn_value=8):
     aucs_dict = {}
     for col in dataframe.columns[1:]:
         if args.invert_score_sign:
-            single_col = dataframe[col].sort_values(ascending=False)
+            single_col = pd.DataFrame(dataframe[col].sort_values(ascending=False))
         else:
-            single_col = dataframe[col].sort_values(ascending=True)
+            single_col = pd.DataFrame(dataframe[col].sort_values(ascending=True))
         
         aucval = rocauc(known_ligs,single_col)
         prcval = prauc(known_ligs,single_col)
-        brcval = bedroc(known_ligs,single_col)
-        efval = topn(topn_value,known_ligs,single_col)
+        brcval = bedroc(known_ligs,score_matrix=single_col,metric=col,invert=args.invert_score_sign)
+        efval = topn(topn_value,known_ligs,score_matrix=single_col,metric=col,invert=args.invert_score_sign)
         
         aucs_dict[col] = [aucval[0],prcval[0],brcval,efval]
 

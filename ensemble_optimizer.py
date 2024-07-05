@@ -52,13 +52,14 @@ def generate_scores(dataframe,known_ligs,args):
     """
     scoring_dict = {'RF': scoring.get_weights_RF, 'XGB': scoring.get_weights_XGB}
     if args.weighted_score == True:
-        score_matrix, weights, pred, aucs = scoring_dict[args.opt_method](dataframe,known_ligs,args)
+        score_matrix, weights, pred, aucs, model = scoring_dict[args.opt_method](dataframe,known_ligs,args)
     elif args.weighted_score == False:
         score_matrix = scoring.get_unweighted(dataframe,args)
         weights = None
         pred = None
         aucs = None
-    return (score_matrix, weights, pred, aucs)
+        model = None
+    return (score_matrix, weights, pred, aucs, model)
 
 
 def main():
@@ -71,11 +72,11 @@ def main():
     score_data, args = load_data() 
     
     # score based on user input -- all conformations 
-    score_matrix, weights, pred, aucs = generate_scores(score_data[0],score_data[1],args)
+    score_matrix, weights, pred, aucs, model = generate_scores(score_data[0],score_data[1],args)
     
     # output
     if args.weighted_score:
-        output.organize_output(score_data,score_matrix,weights,pred,aucs,args)
+        output.organize_output(score_data,score_matrix,weights,pred,aucs,model,args)
         single_conf_performance = scoring.single_conformation_scores(score_data[0],score_data[1],args)
         with open(args.out_file+'_single_confs.pickle','wb') as f:
             pickle.dump(single_conf_performance,f)

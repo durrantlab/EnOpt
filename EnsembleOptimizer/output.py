@@ -45,7 +45,7 @@ def output_scores_ranked(score_matrix,args):
     return final_scores
 
 # output potential ligands ranked by predicted probability
-def output_ligands_ranked(score_data,score_matrix,weights,pred,args):
+def output_ligands_ranked(score_data,score_matrix,weights,pred,model,args):
     """Output potential ligands, ranked by predicted probability.
     
     Args:
@@ -60,7 +60,7 @@ def output_ligands_ranked(score_data,score_matrix,weights,pred,args):
         pd.DataFrame: unknown_scores, outputs filtered to include only decoys/
                       unknown compounds. Also sorted by predicted probability.
     """
-    final_scores = pd.concat([score_data[0],pd.Series(score_matrix,name=args.opt_method),pd.Series(pred,name='Predicted probability')],axis=1)
+    final_scores = pd.concat([score_data[0],pd.Series(score_matrix,name=args.opt_method),pd.Series(pred,name='Predicted probability'),pd.Series(model,name='Prediction source model')],axis=1)
     unknown_scores = final_scores[np.invert(score_data[1].astype(bool))].sort_values(by='Predicted probability',ascending=False)
     known_scores = final_scores[score_data[1].astype(bool)].sort_values(by='Predicted probability',ascending=False)
     final_scores = final_scores.sort_values(by='Predicted probability',ascending=False)
@@ -177,7 +177,7 @@ def interactive_summary(known_scores,unknown_scores,score_matrix,conf_weights,au
     
     fig.show()
 
-def organize_output(score_data,score_matrix,weights,pred,aucs,args):
+def organize_output(score_data,score_matrix,weights,pred,aucs,model,args):
     """Output interactive summary of ensemble optimization results.
     
     Wrapper for all output functions/organizing output.
@@ -200,7 +200,7 @@ def organize_output(score_data,score_matrix,weights,pred,aucs,args):
     """
     # for either knowns or no knowns 
     # output final score matrix file, csv
-    ranked_scores, ranked_knowns, ranked_unknowns = output_ligands_ranked(score_data,score_matrix,weights,pred,args)
+    ranked_scores, ranked_knowns, ranked_unknowns = output_ligands_ranked(score_data,score_matrix,weights,pred,model,args)
 
     # output weights table (all confs), csv
     best_confs = output_best_confs(score_data,weights,args)
