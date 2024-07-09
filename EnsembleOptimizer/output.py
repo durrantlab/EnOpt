@@ -122,34 +122,37 @@ def interactive_summary(known_scores,unknown_scores,score_matrix,conf_weights,au
     box_hover = []
     color_index = 0
     for lig in topn.itertuples():
-        prob = lig[-1]
-        ea = lig[-2]
-        eb = np.max(lig[2:-3])
+        prob = lig[-2]
+        ea = lig[-3]
+        eb = np.max(lig[2:-4])
         bar_hover = ["Predicted probability: %s<br> Ensemble average: %s<br> Ensemble best: %s"%(round(prob,4), round(ea,3), round(eb,3))]
 
         ligs_color = pc.qualitative.Light24[color_index%(len(pc.qualitative.Light24))]
         fig.add_trace(pg.Bar(x=[lig[1]],name=lig[1],y=[prob],hoverinfo='text',hovertext=bar_hover,marker_color=ligs_color),row=1,col=1)
-        fig.add_trace(pg.Box(name=lig[1],y=lig[1:-3],hoverinfo='y',marker_color=ligs_color),row=2,col=1)
+        fig.add_trace(pg.Box(name=lig[1],y=lig[2:-4],hoverinfo='y',marker_color=ligs_color),row=2,col=1)
         color_index +=1 
         
         #fig.add_trace(pg.Box(x0=lig[1],y=lig[2:-3],hoverinfo='y',hovertext=box_hover),row=2,col=1)
 
     #fig.add_trace(pg.Bar(x=topn['Ligand'],y=topn['Predicted probability'],hoverinfo='text',hovertext=bar_hover),row=1,col=1)
- 
+    
     # top 3 conformations info
     if args.invert_score_sign is True:
-        top_conf_counts = score_matrix[score_matrix.columns[2:-3]].idxmax(axis=1).value_counts()
+        top_conf_counts = score_matrix[score_matrix.columns[1:-4]].idxmax(axis=1).value_counts()
     else:
-        top_conf_counts = score_matrix[score_matrix.columns[2:-3]].idxmin(axis=1).value_counts()
+        top_conf_counts = score_matrix[score_matrix.columns[1:-4]].idxmin(axis=1).value_counts()
     
-    confs_dict = {'colors':{'3': 'limegreen', '2': 'limegreen', '1': 'yellow', '0': 'orangered'},
+    #confs_dict = {'colors':{'3': 'limegreen', '2': 'limegreen', '1': 'yellow', '0': 'orangered'},
+    #              'text':{'True': 'Top %s predictive conformations (from tree model)'%(args.topn_confs), 'False': None}}
+    confs_dict = {'colors':{'True': 'limegreen', 'False': 'orangered'},
                   'text':{'True': 'Top %s predictive conformations (from tree model)'%(args.topn_confs), 'False': None}}
-    confs_max = conf_weights.argsort()>(len(conf_weights)-int(args.topn_confs))
+    confs_max = conf_weights.argsort().values >= (len(conf_weights)-int(args.topn_confs))
+    
     confs_hover = []
     confs_color = []
     for i in range(len(conf_weights)):
         confs_hover.append(confs_dict['text'][str(confs_max[i])])
-        confs_color.append(confs_dict['colors'][str(conf_weights[i])])
+        confs_color.append(confs_dict['colors'][str(confs_max[i])])
 
     fig.add_trace(pg.Bar(x=top_conf_counts.index,y=top_conf_counts,marker_color=confs_color,hoverinfo='text',hovertext=confs_hover),row=3,col=1)
 
