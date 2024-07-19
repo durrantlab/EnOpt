@@ -28,7 +28,7 @@ def ensemble_best(dataframe,args):
     
     Args:
         dataframe (pandas DataFrame): docking score matrix.
-
+        args (Namespace): arguments to EnOpt.
     Returns:
         pandas DataFrame: docking score matrix with ensemble best column added.
     """
@@ -47,6 +47,7 @@ def rank_average(dataframe,args):
     
     Args:
         dataframe (pandas DataFrame): docking score matrix.
+        args (Namespace): arguments to EnOpt.
 
     Returns:
         pandas DataFrame: docking score matrix with ranked average column added.
@@ -65,6 +66,7 @@ def rank_best(dataframe,args):
     
     Args:
         dataframe (pandas DataFrame): docking score matrix.
+        args (Namespace): arguments to EnOpt.
 
     Returns:
         pandas DataFrame: docking score matrix with ranked best column added.
@@ -79,7 +81,7 @@ def get_unweighted(dataframe,args):
 
     Args:
         dataframe (pandas DataFrame): docking score matrix.
-        scoring_scheme (string): scoring scheme selection.
+        args (Namespace): arguments to EnOpt.
 
     Returns:
         pandas DataFrame: docking score matrix with scoring scheme column added.
@@ -107,7 +109,7 @@ def get_weights_RF(dataframe,known_ligs,args):
     Args:
         dataframe (pandas dataframe): docking score matrix.
         known_ligs (numpy array): bool mask of known ligands.
-        scoring_scheme (string): scoring scheme selection.
+        args (Namespace): arguments to EnOpt.
 
     Returns:
         tuple of (
@@ -166,7 +168,7 @@ def get_weights_XGB(dataframe,known_ligs,args):
     Args:
         dataframe (pandas dataframe): docking score matrix.
         known_ligs (numpy array): bool mask of known ligands.
-        scoring_scheme (string): scoring scheme selection.
+        args (Namespace): arguments to EnOpt.
 
     Returns:
         tuple of (
@@ -227,10 +229,10 @@ def cv(dataframe,known_ligs,topn_value,classifier_instance):
     Calls rocauc function from evaluation.py.
 
     Args:
-        classifier_instance (RF or XGB classifier): Description of param1.
         dataframe (pandas dataframe): docking score matrix with scoring scheme.
         known_ligs (numpy array): bool mask of known ligands.
-
+        topn_value (int): percent to consider for top-n enrichment.
+        classifier_instance (RF or XGB classifier): Description of param1.
     Returns:
         tuple of (
             RF/XGB classifier: selected best model from 3-fold CV.
@@ -241,7 +243,7 @@ def cv(dataframe,known_ligs,topn_value,classifier_instance):
     weights = []
     aucs = []
     test_splits = []
-    s = msl.StratifiedShuffleSplit(n_splits=3,test_size=0.35)
+    s = msl.StratifiedKFold(n_splits=3)
     tt_split = s.split(np.zeros(len(dataframe)),known_ligs)
     for i, tdat in enumerate(tt_split):
         m = classifier_instance.fit(dataframe[tdat[0]],known_ligs[tdat[0]])
@@ -255,7 +257,6 @@ def cv(dataframe,known_ligs,topn_value,classifier_instance):
         weights.append(m.feature_importances_)
         aucs.append([aucval[0],prcval[0],brcval,efval])
         test_splits.append(tdat[1])
-    #cv_model = models[np.argmax(aucs)]
     
     return (models,weights,aucs,test_splits)
 
@@ -268,12 +269,13 @@ def hyperparams_tuning(classifier_instance,dataframe,known_ligs,args):
     Uses sklearn model selection gridsearch module.
     
     Args:
-        classifier_instance
-        dataframe
-        known_ligs
+        classifier_instance (RF or XGB classifier): Description of param1.
+        dataframe (pandas dataframe): docking score matrix with scoring scheme.
+        known_ligs (numpy array): bool mask of known ligands.
+        args (Namespace): arguments to EnOpt.
 
     Returns:
-        params dictionary
+        dict: params dictionary optimized for the input data.
     """
     if args.opt_method == 'XGB':
         params_dict = {'n_estimators': [15,50,100,150,200],
@@ -301,23 +303,22 @@ def single_conformation_scores(dataframe,known_ligs,args,topn_value=20):
     metrics for each single conformation.
     
     Args:
-        dataframe
-        known_ligs
+        dataframe (pandas dataframe): docking score matrix with scoring scheme.
+        known_ligs (numpy array): bool mask of known ligands.
+        args (Namespace): arguments to EnOpt.
+        topn_value (int): percent to consider for top-n enrichment.
 
     Returns:
-        params dictionary
+        dict: aucs and other metrics of performance for each single conformation.
     """
     aucs_dict = {}
     for col in dataframe.columns[1:]:
-        if args.invert_score_sign:
-            single_col = pd.DataFrame(dataframe[col].sort_values(ascending=False))
-        else:
-            single_col = pd.DataFrame(dataframe[col].sort_values(ascending=True))
+        single_col = dataframe[col]
         
-        aucval = rocauc(known_ligs,single_col)
-        prcval = prauc(known_ligs,single_col)
-        brcval = bedroc(known_ligs,score_matrix=single_col,metric=col,invert=args.invert_score_sign)
-        efval = topn(topn_value,known_ligs,score_matrix=single_col,metric=col,invert=args.invert_score_sign)
+        aucval = rocauc(known_ligs,single_col,invert=args.invert_score_sign)
+        prcval = prauc(known_ligs,single_col,invert=args.invert_score_sign)
+        brcval = bedroc(known_ligs,single_col,invert=args.invert_score_sign)
+        efval = topn(topn_value,known_ligs,single_col,invert=args.invert_score_sign)
         
         aucs_dict[col] = [aucval[0],prcval[0],brcval,efval]
 

@@ -213,7 +213,6 @@ def organize_output(score_data,score_matrix,weights,pred,aucs,model,args):
     auc_out.to_csv(args.out_file+'_cv.csv')
     
     # output image summary
-    # currently only includes the non-actives
     interactive_summary(ranked_knowns,ranked_unknowns,ranked_scores,best_confs,auc_out['AUROC'],args)
 
 
