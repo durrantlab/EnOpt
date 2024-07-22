@@ -78,8 +78,9 @@ def main():
     if args.weighted_score:
         output.organize_output(score_data,score_matrix,weights,pred,aucs,model,args)
         single_conf_performance = scoring.single_conformation_scores(score_data[0],score_data[1],args)
-        with open(args.out_file+'_single_confs.pickle','wb') as f:
-            pickle.dump(single_conf_performance,f)
+        single_conf_performance.to_csv(args.out_file+'_single_conformations.csv')
+        #with open(args.out_file+'_single_confs.pickle','wb') as f:
+        #    pickle.dump(single_conf_performance,f)
     else:
         output.output_scores_ranked(score_matrix,args)
 

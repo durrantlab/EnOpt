@@ -110,7 +110,7 @@ def interactive_summary(known_scores,unknown_scores,score_matrix,conf_weights,au
     fig = make_subplots(4,1,
                         subplot_titles=["Top %s Compounds Predicted Active Probability"%(str(args.top_known_out+args.top_unknown_out)),
                                         "Top %s Compounds Docking Score Distribution"%(str(args.top_known_out+args.top_unknown_out)),
-                                        'Best-score Frequency Per Conformation',
+                                        'Best-score Count Per Conformation',
                                         ' '])
     fig.update_layout(width=950,height=2000)
 
@@ -173,7 +173,7 @@ def interactive_summary(known_scores,unknown_scores,score_matrix,conf_weights,au
 
     fig.update_yaxes(title_text='Predicted probability', row=1,col=1)
     fig.update_yaxes(title_text='Docking score', row=2,col=1)
-    fig.update_yaxes(title_text='Frequency of lowest conformation score', row=3,col=1)
+    fig.update_yaxes(title_text='Count of lowest conformation score', row=3,col=1)
     
     # export as html (interactive)
     fig.write_html(args.out_file+'_interactive_summary.html',include_plotlyjs='cdn')

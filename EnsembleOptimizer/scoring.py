@@ -312,7 +312,7 @@ def single_conformation_scores(dataframe,known_ligs,args,topn_value=20):
         dict: aucs and other metrics of performance for each single conformation.
     """
     aucs_dict = {}
-    for col in dataframe.columns[1:]:
+    for col in dataframe.columns[1:-1]:
         single_col = dataframe[col]
         
         aucval = rocauc(known_ligs,single_col,invert=args.invert_score_sign)
@@ -321,5 +321,9 @@ def single_conformation_scores(dataframe,known_ligs,args,topn_value=20):
         efval = topn(topn_value,known_ligs,single_col,invert=args.invert_score_sign)
         
         aucs_dict[col] = [aucval[0],prcval[0],brcval,efval]
-
-    return aucs_dict
+    
+    output_df = pd.DataFrame(index=list(aucs_dict.keys()),columns=['AUROC','PRAUC','BEDROC','Enrichment Factor'])
+    for k in aucs_dict.keys():
+        output_df.loc[k,:] = aucs_dict[k]
+    #return aucs_dict
+    return output_df
