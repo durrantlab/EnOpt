@@ -18,7 +18,9 @@ alternative to the command line input format to EnOpt, and does not require any 
 
 `demo_output_conformations.csv` is an example output file containing the conformation importances as computed by EnOpt.
 
-`demo_output_cv.csv` is an example output file containing 3-fold cross-validation AUROC values from EnOpt model training.
+`demo_output_cv.csv` is an example output file containing 3-fold cross-validation AUROC, PRAUC, BEDROC, and EF values from EnOpt model training.
+
+`demo_output_single_conformations.csv` is an example output file containing the AUROC, PRAUC, BEDROC, and EF values for each single conformation from the ensemble used independently.
 
 `demo_output_interactive_summary.html` is an example output file containing the interactive summary from a run of EnOpt using the 
 HXK4 screen inputs provided.
