@@ -7,7 +7,7 @@ from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import auc
 from rdkit.ML.Scoring.Scoring import CalcBEDROC
 
-def inversion(kn_ligs,pred_ligs,invert):
+def inversion_old(kn_ligs,pred_ligs,invert):
     score_input = np.column_stack([kn_ligs,pred_ligs])
 
     if invert == False: # lower values are better
@@ -18,6 +18,17 @@ def inversion(kn_ligs,pred_ligs,invert):
     score_input = score_input[indices] # ordered predicted scores w corresponding label
     return score_input
 
+def inversion(kn_ligs,pred_ligs,invert):
+
+    if invert == False: # lower values are better
+        indices = np.argsort(pred_ligs)
+        score_input = np.column_stack([kn_ligs,pred_ligs*-1])
+    else: # higher values are better (incl probabilities)
+        indices = np.argsort(pred_ligs*-1)
+        score_input = np.column_stack([kn_ligs,pred_ligs])
+    
+    score_input = score_input[indices] # ordered predicted scores w corresponding label
+    return score_input
 
 # compute ROCAUC
 def rocauc(kn_ligs,pred_ligs,invert=True):
