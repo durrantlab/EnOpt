@@ -70,7 +70,7 @@ def topn(topn_value, kn_ligs, pred_ligs, invert=True):
 
     # Invert scores if necessary (assuming inversion function is defined elsewhere)
     score_input = inversion(kn_ligs, pred_ligs, invert)
-    
+
     # Calculate total number of compounds
     total_compounds = score_input.shape[0]
     
@@ -130,6 +130,11 @@ def bedroc(kn_ligs,pred_ligs,invert=True):
         float: BEDROC score.
     """
     score_input = inversion(kn_ligs,pred_ligs,invert)
+
+    # Save to tmp.csv
+    # np.savetxt('tmp.csv',score_input,delimiter=',')
+    # print(score_input)
+    # import pdb; pdb.set_trace()
     
     bedroc = CalcBEDROC(score_input,0,5)
     
