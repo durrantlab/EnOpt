@@ -50,28 +50,69 @@ def rocauc(kn_ligs,pred_ligs,invert=True):
     auc = roc_auc_score(score_input[:,0],score_input[:,1])
     return (auc, curve_data)
 
-
-def topn(topn_value,kn_ligs,pred_ligs,invert=True):
-    """Compute top-n % enrichment ratio.
-    Input arguments kn_ligs, metric, and invert are required, and either pred_ligs
-    or score_matrix is also required.
+def topn(topn_value, kn_ligs, pred_ligs, invert=True):
+    """Compute top-n % enrichment factor.
+    
+    This function calculates the enrichment factor for the top N% of compounds.
+    The enrichment factor is the ratio of the proportion of actives in the top N%
+    to the proportion of actives in the entire dataset.
     
     Args:
-        topn (int): top % to use when computing enrichment.
-        kn_ligs (np.ndarray): known ligand indices.
-        pred_ligs (np.ndarray): predicted ligand scores.
-        invert (bool): whether scores for the metric are inverted (i.e., more
-                       positive is better)
+        topn_value (int): Top percentage to use when computing enrichment (e.g., 20 for top 20%).
+        kn_ligs (np.ndarray): Known ligand indicators (1 for active, 0 for inactive).
+        pred_ligs (np.ndarray): Predicted ligand scores.
+        invert (bool): Whether scores for the metric are inverted (i.e., more positive is better).
+                       Default is True.
 
     Returns:
-        float: enrichment factor, or ratio of known ligands in the top N% of ranked output.
+        float: Enrichment factor. A value greater than 1 indicates better than random performance.
     """
 
-    score_input = inversion(kn_ligs,pred_ligs,invert)
-    topn_cutoff = int(score_input.shape[0]*(float(topn_value)/100.0))
-    enrichment = np.sum(score_input[:topn_cutoff,0])
-    total = np.sum(kn_ligs)
-    return (enrichment/total)
+    # Invert scores if necessary (assuming inversion function is defined elsewhere)
+    score_input = inversion(kn_ligs, pred_ligs, invert)
+    
+    # Calculate total number of compounds
+    total_compounds = score_input.shape[0]
+    
+    # Calculate the index cutoff for the top N%
+    topn_cutoff = int(total_compounds * (float(topn_value) / 100.0))
+    
+    # Count the number of active compounds in the top N%
+    actives_in_top = np.sum(score_input[:topn_cutoff, 0])
+    
+    # Count the total number of active compounds
+    total_actives = np.sum(kn_ligs)
+    
+    # Calculate the fraction corresponding to the top N%
+    fraction_top = topn_value / 100.0
+    
+    # Calculate the enrichment factor
+    # (proportion of actives in top N%) / (proportion of actives in entire dataset)
+    ef = (actives_in_top / (total_compounds * fraction_top)) / (total_actives / total_compounds)
+    
+    return ef
+
+# def topn(topn_value,kn_ligs,pred_ligs,invert=True):
+#     """Compute top-n % enrichment ratio.
+#     Input arguments kn_ligs, metric, and invert are required, and either pred_ligs
+#     or score_matrix is also required.
+    
+#     Args:
+#         topn (int): top % to use when computing enrichment.
+#         kn_ligs (np.ndarray): known ligand indices.
+#         pred_ligs (np.ndarray): predicted ligand scores.
+#         invert (bool): whether scores for the metric are inverted (i.e., more
+#                        positive is better)
+
+#     Returns:
+#         float: enrichment factor, or ratio of known ligands in the top N% of ranked output.
+#     """
+
+#     score_input = inversion(kn_ligs,pred_ligs,invert)
+#     topn_cutoff = int(score_input.shape[0]*(float(topn_value)/100.0))
+#     enrichment = np.sum(score_input[:topn_cutoff,0])
+#     total = np.sum(kn_ligs)
+#     return (enrichment/total)
 
 
 def bedroc(kn_ligs,pred_ligs,invert=True):
