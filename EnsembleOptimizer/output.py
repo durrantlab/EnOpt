@@ -7,6 +7,7 @@ import plotly.graph_objects as pg
 import plotly.colors as pc
 from plotly.subplots import make_subplots
 
+from .evaluation import rocauc, prauc, bedroc, topn
 
 def write_matrix(matrix,prefix='enopt',weights_index=False):
     """Correctly format and write DataFrame or array files as csv.
@@ -180,6 +181,12 @@ def interactive_summary(known_scores,unknown_scores,score_matrix,conf_weights,au
     
     fig.show()
 
+def full_set_metrics(score_data,score_matrix):
+    k = score_data[1]
+    p = score_matrix
+    return np.array([rocauc(k,p)[0],prauc(k,p)[0],bedroc(k,p),topn(20,k,p)])
+
+
 def organize_output(score_data,score_matrix,weights,pred,aucs,model,args):
     """Output interactive summary of ensemble optimization results.
     
@@ -209,11 +216,14 @@ def organize_output(score_data,score_matrix,weights,pred,aucs,model,args):
     best_confs = output_best_confs(score_data,weights,args)
 
     # save CV data (for knowns only)
-    auc_out = pd.DataFrame(aucs,index=['Model 1','Model 2','Model 3'],columns=['AUROC','PRAUC','BEDROC','Enrichment Factor'])
+    full_data_auc = np.array([rocauc(score_data[1],pred)[0],prauc(score_data[1],pred)[0],bedroc(score_data[1],pred),topn(20,score_data[1],pred)])
+    aucs_all = np.vstack([aucs,full_data_auc])
+    
+    auc_out = pd.DataFrame(aucs_all,index=['Model 1 test set','Model 2 test set','Model 3 test set','All compound predictions'],columns=['AUROC','PRAUC','BEDROC','Enrichment Factor'])
     auc_out.to_csv(args.out_file+'_cv.csv')
     
     # output image summary
-    interactive_summary(ranked_knowns,ranked_unknowns,ranked_scores,best_confs,auc_out['AUROC'],args)
+    interactive_summary(ranked_knowns,ranked_unknowns,ranked_scores,best_confs,auc_out['AUROC'][:-1],args)
 
 
     
