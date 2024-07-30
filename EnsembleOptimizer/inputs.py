@@ -223,7 +223,7 @@ def read_input(filename,known_ligs):
     docking_score_matrix = pd.read_csv(filename)    
     knowns_list = []
     if known_ligs != None:
-        known_ligs_list = pd.read_csv(known_ligs,header=0)
+        known_ligs_list = pd.read_csv(known_ligs,header=None)
         for line in docking_score_matrix.iloc[:,0]:
             if line in known_ligs_list.values.astype('str'):
                 knowns_list.append(True)
