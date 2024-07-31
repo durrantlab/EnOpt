@@ -7,16 +7,6 @@ from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import auc
 from rdkit.ML.Scoring.Scoring import CalcBEDROC
 
-def inversion_old(kn_ligs,pred_ligs,invert):
-    score_input = np.column_stack([kn_ligs,pred_ligs])
-
-    if invert == False: # lower values are better
-        indices = np.argsort(score_input[:,-1])
-    else: # higher values are better (incl probabilities)
-        indices = np.argsort(score_input[:,-1]*-1)
-    
-    score_input = score_input[indices] # ordered predicted scores w corresponding label
-    return score_input
 
 def inversion(kn_ligs,pred_ligs,invert):
 
@@ -92,27 +82,6 @@ def topn(topn_value, kn_ligs, pred_ligs, invert=True):
     
     return ef
 
-# def topn(topn_value,kn_ligs,pred_ligs,invert=True):
-#     """Compute top-n % enrichment ratio.
-#     Input arguments kn_ligs, metric, and invert are required, and either pred_ligs
-#     or score_matrix is also required.
-    
-#     Args:
-#         topn (int): top % to use when computing enrichment.
-#         kn_ligs (np.ndarray): known ligand indices.
-#         pred_ligs (np.ndarray): predicted ligand scores.
-#         invert (bool): whether scores for the metric are inverted (i.e., more
-#                        positive is better)
-
-#     Returns:
-#         float: enrichment factor, or ratio of known ligands in the top N% of ranked output.
-#     """
-
-#     score_input = inversion(kn_ligs,pred_ligs,invert)
-#     topn_cutoff = int(score_input.shape[0]*(float(topn_value)/100.0))
-#     enrichment = np.sum(score_input[:topn_cutoff,0])
-#     total = np.sum(kn_ligs)
-#     return (enrichment/total)
 
 
 def bedroc(kn_ligs,pred_ligs,invert=True):
